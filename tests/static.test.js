@@ -17,7 +17,7 @@ const ganttJs = read('assets/js/vetra-gantt.js');
 const adminJs = read('assets/js/vetra-admin.js');
 const jalaliJs = read('assets/js/vetra-jalali.js');
 
-assert.match(main, /Version: 1\.1\.0/);
+assert.match(main, /Version: 1\.1\.1/);
 assert.match(main, /class-admin\.php/);
 assert.match(main, /class-holidays\.php/);
 assert.match(api, /update_project/);
