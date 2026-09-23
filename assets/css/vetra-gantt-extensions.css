@@ -1,7 +1,8 @@
 /* Vetra Gantt — extensions: 9-column inline grid (adds نوع), editor cells, draft row. Loaded after base; selectors mirror base on purpose. */
-.vg-root .vg-grid-head,.vg-root .vg-row{grid-template-columns:60px minmax(140px,1.6fr) 84px 45px 96px 96px 110px 58px 118px;min-width:807px}
+.vg-root .vg-grid-head,.vg-root .vg-row{grid-template-columns:60px minmax(140px,1.6fr) 84px 45px 96px 96px 110px 58px 170px;min-width:859px}
 .vg-root .vg-grid-head{position:sticky;top:0;z-index:2}
 .vg-root .vg-row{border-bottom-color:var(--vg-line-soft)}
+.vg-root .vg-wbs{font-weight:800;color:var(--vg-accent-strong);letter-spacing:.2px}
 .vg-root .vg-row input,.vg-root .vg-row select{width:100%;min-width:0;height:30px;border:1px solid transparent;border-radius:6px;background:transparent;color:inherit;padding:0 6px;font-size:12px;font-variant-numeric:tabular-nums;transition:background .12s ease,border-color .12s ease,box-shadow .12s ease}
 .vg-root .vg-row input:hover:not(:disabled),.vg-root .vg-row select:hover:not(:disabled){background:var(--vg-bg);border-color:var(--vg-line)}
 .vg-root .vg-row input:focus,.vg-root .vg-row select:focus{background:var(--vg-surface);border-color:var(--vg-accent);box-shadow:0 0 0 3px var(--vg-ring);outline:none}
@@ -17,7 +18,7 @@
 .vg-root .vg-row-tools button:disabled,.vg-root button:disabled{opacity:.5;cursor:wait}
 .vg-root .vg-form input:disabled{background:#f5f5f4;color:#78716c}
 .vg-root .vg-controls{flex-wrap:wrap}
-@media(max-width:850px){.vg-root .vg-grid{width:807px}}
+@media(max-width:850px){.vg-root .vg-grid{width:859px}}
 @media(prefers-color-scheme:dark){.vg-root .vg-draft{background:linear-gradient(90deg,#272016,#221d17)}
 .vg-root .vg-draft:hover{background:#2b2318}
 .vg-root .vg-draft input::placeholder{color:#8d7a52}

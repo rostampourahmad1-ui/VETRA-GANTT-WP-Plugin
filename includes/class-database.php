@@ -27,7 +27,7 @@ class Vetra_Gantt_Database {
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             project_id bigint(20) unsigned NOT NULL,
             parent_id bigint(20) unsigned NULL,
-            wbs_code varchar(50) NOT NULL DEFAULT '',
+            wbs_code varchar(255) NOT NULL DEFAULT '',
             title varchar(255) NOT NULL,
             start_date date NULL,
             end_date date NULL,
@@ -111,5 +111,21 @@ class Vetra_Gantt_Database {
             return true;
         };
         return $walk(0) && count($visited) === count($rows);
+    }
+    public static function normalize_hierarchy($project_id) {
+        global $wpdb;
+        $table = self::table('tasks');
+        $rows = self::tasks($project_id);
+        $children = array();
+        foreach ($rows as $row) {
+            if (!empty($row['parent_id'])) $children[(int) $row['parent_id']] = true;
+        }
+        foreach ($rows as $row) {
+            $id = (int) $row['id'];
+            if (isset($children[$id]) && $row['task_type'] !== 'summary') {
+                if ($wpdb->update($table, array('task_type' => 'summary'), array('id' => $id, 'project_id' => $project_id)) === false) return false;
+            }
+        }
+        return true;
     }
 }

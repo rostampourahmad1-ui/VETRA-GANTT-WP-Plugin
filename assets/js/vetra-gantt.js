@@ -9,8 +9,8 @@
   document.querySelectorAll('.vg-root').forEach(root => {
     const q = s => root.querySelector(s), grid = q('.vg-grid-body'), chart = q('.vg-chart-body'), content = q('.vg-chart-content'), head = q('.vg-chart-head'), status = q('.vg-status'), dialog = q('.vg-dialog'), form = q('.vg-form'), deleteButton = q('.vg-delete');
     const projectId = Number(root.dataset.project);
-    let tasks = [], deps = [], project, editing = null, view = 'gantt', initialForm = '', pendingFocus = null;
-    const blankDraft = () => ({title:'', task_type:'task', duration:'1', start:'', end:'', predecessors:'', weight:'0'});
+    let tasks = [], deps = [], project, editing = null, view = 'gantt', initialForm = '', pendingFocus = null, collapsed = new Set();
+    const blankDraft = (parent_id = null) => ({title:'', task_type:'task', duration:'1', start:'', end:'', predecessors:'', weight:'0', parent_id});
     let draft = blankDraft();
     function message(text, error = false) { status.textContent = text; status.classList.toggle('vg-error', error); }
     async function api(path, method = 'GET', body) {
@@ -25,6 +25,18 @@
     }
     function predecessorText(id) { return deps.filter(d => Number(d.task_id) === Number(id)).map(d => { const t = tasks.find(t => Number(t.id) === Number(d.depends_on)); return `${t?.wbs_code || d.depends_on}${d.dep_type}${Number(d.lag_days) >= 0 ? '+' : ''}${d.lag_days}`; }).join(', '); }
     function depth(t) { let n = 0, seen = new Set([Number(t.id)]); while (t.parent_id && n < 20) { const p = tasks.find(x => Number(x.id) === Number(t.parent_id)); if (!p || seen.has(Number(p.id))) break; seen.add(Number(p.id)); n++; t = p; } return n; }
+    function visibleTasks() {
+      return tasks.filter(task => {
+        let parent = Number(task.parent_id || 0), seen = new Set();
+        while (parent && !seen.has(parent)) {
+          if (collapsed.has(parent)) return false;
+          seen.add(parent);
+          const row = tasks.find(item => Number(item.id) === parent);
+          parent = Number(row?.parent_id || 0);
+        }
+        return true;
+      });
+    }
     function columns() {
       const values = tasks.flatMap(t => [t.start_date, t.end_date].filter(Boolean).map(utc));
       const min = Math.min(utc(project.start_date), ...values) - 7 * day;
@@ -36,7 +48,7 @@
       const s = t.task_type === 'summary', m = t.task_type === 'milestone';
       const start = t.start_date ? J.display(t.start_date) : '', end = t.end_date ? J.display(t.end_date) : '';
       return `<div class="vg-row${s ? ' vg-summary' : ''}" data-id="${Number(t.id)}">`
-        + `<span dir="ltr">${escape(t.wbs_code)}</span>`
+        + `<span class="vg-wbs" dir="ltr">${escape(t.wbs_code)}</span>`
         + `<input data-field="title" maxlength="255" aria-label="عنوان فعالیت" style="padding-inline-start:${6 + depth(t) * 16}px" value="${escape(t.title)}">`
         + `<select data-field="task_type" aria-label="نوع فعالیت">${typeOptions(t.task_type)}</select>`
         + `<input data-field="duration" type="number" min="0" aria-label="مدت" value="${m ? 0 : Number(t.duration)}"${s || m ? ' disabled' : ''}>`
@@ -44,11 +56,12 @@
         + `<input data-field="end_jalali" dir="ltr" data-jalali-picker data-jalali-typable aria-label="پایان" value="${escape(end)}"${s || m ? ' disabled' : ''}>`
         + `<input data-field="predecessors" dir="ltr" placeholder="1FS, 2SS+3" aria-label="پیش‌نیاز" value="${escape(predecessorText(t.id))}">`
         + `<input data-field="weight_percent" type="number" min="0" max="100" step="0.001" aria-label="سهم درصد" value="${Number(t.weight_percent)}"${s ? ' disabled' : ''}>`
-        + `<span class="vg-row-tools"><button type="button" data-action="edit" title="ویرایش پیشرفته" aria-label="ویرایش ${escape(t.title)}">✎</button><button type="button" data-action="up" title="بالا" aria-label="انتقال به بالا">↑</button><button type="button" data-action="down" title="پایین" aria-label="انتقال به پایین">↓</button><button type="button" data-action="indent" title="تورفتگی" aria-label="تورفتگی">←</button><button type="button" data-action="outdent" title="بیرون‌رفتگی" aria-label="بیرون‌رفتگی">→</button></span></div>`;
+        + `<span class="vg-row-tools">${s ? `<button type="button" class="vg-collapse" data-action="toggle" title="${collapsed.has(Number(t.id)) ? 'باز کردن زیرگروه‌ها' : 'جمع کردن زیرگروه‌ها'}" aria-label="${collapsed.has(Number(t.id)) ? 'باز کردن' : 'جمع کردن'} زیرگروه‌های ${escape(t.title)}">${collapsed.has(Number(t.id)) ? '＋' : '−'}</button>` : ''}<button type="button" data-action="edit" title="ویرایش پیشرفته" aria-label="ویرایش ${escape(t.title)}">✎</button><button type="button" data-action="child" title="افزودن زیرگروه" aria-label="افزودن زیرگروه برای ${escape(t.title)}">↳</button><button type="button" data-action="up" title="بالا" aria-label="انتقال به بالا">↑</button><button type="button" data-action="down" title="پایین" aria-label="انتقال به پایین">↓</button><button type="button" data-action="indent" title="تورفتگی" aria-label="تورفتگی">←</button><button type="button" data-action="outdent" title="بیرون‌رفتگی" aria-label="بیرون‌رفتگی">→</button></span></div>`;
     }
     function draftRow() {
+      const parent = draft.parent_id ? tasks.find(t => Number(t.id) === Number(draft.parent_id)) : null;
       return `<div class="vg-row vg-draft" data-id="draft">`
-        + `<span dir="ltr"></span>`
+        + `<span class="vg-wbs" dir="ltr" title="${parent ? `زیرگروه ${escape(parent.wbs_code)} ${escape(parent.title)}` : 'فعالیت سطح اصلی'}">${parent ? `↳ ${escape(parent.wbs_code)}` : ''}</span>`
         + `<input data-field="title" maxlength="255" placeholder="ردیف جدید…" aria-label="عنوان فعالیت جدید" value="${escape(draft.title)}">`
         + `<select data-field="task_type" aria-label="نوع فعالیت جدید">${typeOptions(draft.task_type)}</select>`
         + `<input data-field="duration" type="number" min="0" aria-label="مدت" value="${escape(draft.duration)}"${draft.task_type === 'milestone' ? ' disabled' : ''}>`
@@ -60,21 +73,22 @@
     }
     function render() {
       if (view === 'calendar') { renderCalendar(); return; }
-      grid.innerHTML = tasks.map(rowHtml).join('') + draftRow();
+      const shown = visibleTasks();
+      grid.innerHTML = shown.map(rowHtml).join('') + draftRow();
       const {min,count} = columns(), zoom = q('.vg-zoom').value, width = zoom === 'day' ? 38 : zoom === 'week' ? 22 : 10, w = count * width;
       const x = date => ((utc(date) - min) / day) * width;
       head.innerHTML = `<div style="width:${w}px">${Array.from({length:count}, (_,i) => { const date = iso(min + i*day), j = J.gregorianToJalali(...date.split('-').map(Number)); const show = zoom === 'day' || (zoom === 'week' && new Date(min+i*day).getUTCDay() === 6) || (zoom === 'month' && j[2] === 1); return `<span style="width:${width}px">${show ? (zoom === 'month' ? months[j[1]-1] : j[2]) : ''}</span>`; }).join('')}</div>`;
-      content.style.width = w + 'px'; content.style.height = tasks.length * 40 + 'px';
-      content.innerHTML = `<div class="vg-lines" style="background-size:${width}px 40px"></div>` + tasks.map((t,i) => {
+      content.style.width = w + 'px'; content.style.height = shown.length * 40 + 'px';
+      content.innerHTML = `<div class="vg-lines" style="background-size:${width}px 40px"></div>` + shown.map((t,i) => {
         if (!t.start_date || !t.end_date) return '';
         const left = x(t.start_date), barWidth = Math.max(width * .65, x(t.end_date) - left + width);
         return `<div class="vg-bar ${t.task_type === 'summary' ? 'vg-bar-summary' : ''} ${t.task_type === 'milestone' ? 'vg-milestone' : ''}" style="left:${left}px;top:${i*40+10}px;width:${t.task_type === 'milestone' ? 16 : barWidth}px" title="${escape(t.title)} — ${J.display(t.start_date)} تا ${J.display(t.end_date)}" aria-label="${escape(t.title)}"></div>`;
       }).join('') + `<div class="vg-today" style="left:${((Date.now()-min)/day)*width}px"></div>`;
-      const byId = new Map(tasks.map((t,i) => [Number(t.id),{t,i}]));
+      const byId = new Map(shown.map((t,i) => [Number(t.id),{t,i}]));
       const paths = deps.map(d => { const a = byId.get(Number(d.depends_on)), b = byId.get(Number(d.task_id)); if (!a || !b || !a.t.start_date || !b.t.start_date) return '';
         const from = x(d.dep_type[0] === 'F' ? a.t.end_date : a.t.start_date) + (d.dep_type[0] === 'F' ? width : 0), to = x(d.dep_type[1] === 'F' ? b.t.end_date : b.t.start_date) + (d.dep_type[1] === 'F' ? width : 0), y1 = a.i*40+20, y2 = b.i*40+20, mid = from + (to >= from ? 8 : -8);
         return `<path d="M${from} ${y1} H${mid} V${y2} H${to}"/>`; }).join('');
-      content.insertAdjacentHTML('beforeend', `<svg class="vg-arrows" width="${w}" height="${tasks.length*40}" aria-hidden="true"><defs><marker id="vg-arrow-${projectId}" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6"/></marker></defs><g marker-end="url(#vg-arrow-${projectId})">${paths}</g></svg>`);
+      content.insertAdjacentHTML('beforeend', `<svg class="vg-arrows" width="${w}" height="${shown.length*40}" aria-hidden="true"><defs><marker id="vg-arrow-${projectId}" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6"/></marker></defs><g marker-end="url(#vg-arrow-${projectId})">${paths}</g></svg>`);
       if (window.VetraDatePicker) window.VetraDatePicker.init(grid);
       if (pendingFocus) {
         const el = grid.querySelector(`[data-id="${pendingFocus.row}"] [data-field="${pendingFocus.field}"]`);
@@ -111,7 +125,7 @@
     async function saveDraft(field) {
       if (!draft.title.trim()) { message('برای افزودن ردیف، عنوان لازم است.', true); return; }
       try {
-        const body = {title: draft.title.trim(), task_type: draft.task_type, duration: Number(draft.duration) || 1, weight_percent: Number(draft.weight) || 0, dependencies: parsePredecessors(draft.predecessors, tasks, 0)};
+        const body = {title: draft.title.trim(), task_type: draft.task_type, duration: Number(draft.duration) || 1, weight_percent: Number(draft.weight) || 0, parent_id: draft.parent_id ? Number(draft.parent_id) : null, dependencies: parsePredecessors(draft.predecessors, tasks, 0)};
         if (draft.start.trim()) body.start_date = J.parse(draft.start.trim());
         if (draft.end.trim()) { body.end_date = J.parse(draft.end.trim()); body.schedule_mode = 'manual'; }
         await api(`/projects/${projectId}/tasks`, 'POST', body);
@@ -125,7 +139,7 @@
       editing = t || null; form.reset();
       deleteButton.hidden = !editing;
       const parent = form.elements.parent_id;
-      parent.innerHTML = '<option value="">بدون سرگروه</option>' + tasks.filter(x => x.task_type === 'summary' && x.id !== t?.id).map(x=>`<option value="${Number(x.id)}">${escape(x.wbs_code)} ${escape(x.title)}</option>`).join('');
+      parent.innerHTML = '<option value="">بدون سرگروه</option>' + tasks.filter(x => x.id !== t?.id).map(x=>`<option value="${Number(x.id)}">${escape(x.wbs_code)} ${escape(x.title)}${x.task_type === 'summary' ? ' (خلاصه)' : ''}</option>`).join('');
       if (t) for (const field of ['title','parent_id','task_type','schedule_mode','duration','weight_percent']) form.elements[field].value = t[field] ?? '';
       form.elements.start_jalali.value = t?.start_date ? J.display(t.start_date) : '';
       form.elements.end_jalali.value = t?.schedule_mode === 'manual' ? J.display(t.end_date) : '';
@@ -158,7 +172,7 @@
     async function arrange(task, action) {
       const index = tasks.indexOf(task), siblings = tasks.filter(t=>Number(t.parent_id||0)===Number(task.parent_id||0)), siblingIndex=siblings.indexOf(task);
       if (action === 'up' || action === 'down') { const other=siblings[siblingIndex+(action==='up'?-1:1)]; if(!other)return; const otherIndex=tasks.indexOf(other); [tasks[index],tasks[otherIndex]]=[tasks[otherIndex],tasks[index]]; }
-      if (action === 'indent') { const previous=siblings[siblingIndex-1]; if(!previous||previous.task_type!=='summary')throw Error('برای تورفتگی، ردیف قبلی باید سرگروه باشد.'); task.parent_id=Number(previous.id); }
+      if (action === 'indent') { const previous=siblings[siblingIndex-1]; if(!previous)throw Error('برای تورفتگی، ردیف قبلی لازم است.'); task.parent_id=Number(previous.id); }
       if (action === 'outdent') { if(!task.parent_id)return; const parent=tasks.find(t=>Number(t.id)===Number(task.parent_id)); task.parent_id=parent?.parent_id?Number(parent.parent_id):null; }
       await saveOrder();
     }
@@ -183,7 +197,7 @@
         if (rowId === 'draft') await saveDraft(field); else await commitValue(rowId, field, input.value);
       }
     });
-    q('.vg-add').addEventListener('click', () => { pendingFocus = {row:'draft', field:'title'}; render(); });
+    q('.vg-add').addEventListener('click', () => { draft = blankDraft(); pendingFocus = {row:'draft', field:'title'}; render(); });
     q('.vg-cancel').addEventListener('click', () => { if(new URLSearchParams(new FormData(form)).toString()!==initialForm&&!window.confirm('تغییرات ذخیره‌نشده کنار گذاشته شود؟'))return; dialog.close(); });
     deleteButton.addEventListener('click', async () => {
       if (!editing || !window.confirm(`فعالیت «${editing.title}» حذف شود؟ این کار قابل بازگشت نیست.`)) return;
@@ -201,7 +215,9 @@
         if (btn.dataset.action === 'add') return await saveDraft('title');
         const task = tasks.find(t => Number(t.id) === Number(btn.closest('.vg-row').dataset.id));
         if (!task) return;
+        if (btn.dataset.action === 'toggle') { const id = Number(task.id); collapsed.has(id) ? collapsed.delete(id) : collapsed.add(id); render(); return; }
         if (btn.dataset.action === 'edit') { open(task); return; }
+        if (btn.dataset.action === 'child') { collapsed.delete(Number(task.id)); draft = blankDraft(Number(task.id)); pendingFocus = {row:'draft', field:'title'}; render(); return; }
         await arrange(task, btn.dataset.action);
       } catch (err) { message(err.message, true); }
       finally { btn.disabled = false; }

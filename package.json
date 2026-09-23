@@ -2,7 +2,7 @@
   "name": "vetra-gantt-quality",
   "private": true,
   "scripts": {
-    "test": "node tests/jalali.test.js && node tests/holidays.test.js && node tests/datepicker.test.js && node tests/predecessors.test.js && node tests/static.test.js",
+    "test": "node tests/jalali.test.js && node tests/holidays.test.js && node tests/datepicker.test.js && node tests/predecessors.test.js && node tests/wbs.test.js && node tests/static.test.js",
     "check": "node --check assets/js/vetra-jalali.js && node --check assets/js/vetra-predecessors.js && node --check assets/js/vetra-gantt.js && node --check assets/js/vetra-admin.js && node --check assets/js/vetra-datepicker.js"
   }
 }

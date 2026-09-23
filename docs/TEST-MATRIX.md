@@ -7,6 +7,7 @@
 | شمسی | `tests/jalali.test.js` | رفت‌وبرگشت 1900 تا 2100، کبیسه، ارقام فارسی/عربی، ورودی نامعتبر، `parseOptional`، helpers تقویم (monthLength/isLeap/toParts/weekdayIndex) |
 | تعطیلات رسمی | `tests/holidays.test.js` | ساختار `data/iran-holidays.json`، ترتیب، یکتایی، تبدیل‌پذیری شمسی، سیمولیشن `for_range` |
 | انتخاب‌گر تاریخ | `tests/datepicker.test.js` | گرید ماه (اختصار ۷، blanks، ترتیب روزها، اسفند کبیسه ۳۰/۲۹)، ستون شنبه، فرمت خروجی |
+| WBS چندسطحی | `tests/wbs.test.js` | تولید کدهای `1` تا عمق چندگانه، ارتقای خودکار والد به summary، ترتیب خواهرها و رد چرخه |
 | قرارداد ایستا | `tests/static.test.js` | routeها، مجوز، rate limit، تراکنش، audit، WBS، endpoint تعطیلات، data-jalali-picker، بارگذاری خودکار تعطیلات، نبود marker ناتمام |
 | Scheduler | `tests/scheduler-test.php` | مدت، FS، milestone، چرخه، **رد شدن خودکار از تعطیلات رسمی**، تعطیل دستی + رسمی |
 

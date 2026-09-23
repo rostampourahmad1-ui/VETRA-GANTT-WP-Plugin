@@ -132,7 +132,7 @@ class Vetra_Gantt_RestAPI {
         if ($mode === 'manual' && (!$start || !$end || $end < $start)) return self::error('بازه تاریخ دستی نامعتبر است.');
         if ($parent) {
             $parent_row = $wpdb->get_row($wpdb->prepare("SELECT project_id,task_type FROM $table WHERE id=%d", $parent), ARRAY_A);
-            if (!$parent_row || (int) $parent_row['project_id'] !== $project_id || $parent === $id || $parent_row['task_type'] !== 'summary') return self::error('سرگروه باید یک فعالیت خلاصه در همان پروژه باشد.');
+            if (!$parent_row || (int) $parent_row['project_id'] !== $project_id || $parent === $id) return self::error('سرگروه باید فعالیت دیگری در همان پروژه باشد.');
             $ancestors = array(); $cursor = $parent;
             while ($cursor && !isset($ancestors[$cursor])) {
                 if ($cursor === $id) return self::error('چرخه در WBS مجاز نیست.');
@@ -190,7 +190,7 @@ class Vetra_Gantt_RestAPI {
                 }
             }
         }
-        if (!Vetra_Gantt_Database::rebuild_wbs($project_id)) {
+        if (!Vetra_Gantt_Database::normalize_hierarchy($project_id) || !Vetra_Gantt_Database::rebuild_wbs($project_id)) {
             $wpdb->query('ROLLBACK');
             return self::error('بازسازی WBS ناموفق بود.', 409);
         }
@@ -231,7 +231,7 @@ class Vetra_Gantt_RestAPI {
         $parents = array(); $seen = array();
         foreach ($items as $item) {
             $id = (int) ($item['id'] ?? 0); $parent = !empty($item['parent_id']) ? (int) $item['parent_id'] : 0;
-            if (!$id || !isset($types[$id]) || isset($seen[$id]) || ($parent && (!isset($types[$parent]) || $types[$parent] !== 'summary'))) return self::error('فعالیت یا سرگروه نامعتبر است.', 409);
+            if (!$id || !isset($types[$id]) || isset($seen[$id]) || ($parent && !isset($types[$parent]))) return self::error('فعالیت یا سرگروه نامعتبر است.', 409);
             $seen[$id] = true; $parents[$id] = $parent;
         }
         foreach ($parents as $id => $parent) {
@@ -243,7 +243,7 @@ class Vetra_Gantt_RestAPI {
             $parent = !empty($item['parent_id']) ? (int) $item['parent_id'] : null;
             if ($wpdb->update($table, array('parent_id' => $parent, 'sort_order' => $index + 1), array('id' => (int) $item['id'], 'project_id' => $project_id)) === false) { $wpdb->query('ROLLBACK'); return self::error('ذخیره ترتیب ناموفق بود.', 500); }
         }
-        if (!Vetra_Gantt_Database::rebuild_wbs($project_id)) { $wpdb->query('ROLLBACK'); return self::error('بازسازی WBS ناموفق بود.', 409); }
+        if (!Vetra_Gantt_Database::normalize_hierarchy($project_id) || !Vetra_Gantt_Database::rebuild_wbs($project_id)) { $wpdb->query('ROLLBACK'); return self::error('بازسازی WBS ناموفق بود.', 409); }
         $wpdb->query('COMMIT'); Vetra_Gantt_Database::audit('reorder', 'project', $project_id, $project_id);
         return array('updated' => true);
     }

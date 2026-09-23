@@ -16,7 +16,7 @@ const ganttJs = read('assets/js/vetra-gantt.js');
 const adminJs = read('assets/js/vetra-admin.js');
 const jalaliJs = read('assets/js/vetra-jalali.js');
 
-assert.match(main, /Version: 1\.0\.0/);
+assert.match(main, /Version: 1\.1\.0/);
 assert.match(main, /class-admin\.php/);
 assert.match(main, /class-holidays\.php/);
 assert.match(api, /update_project/);
@@ -30,6 +30,8 @@ assert.match(api, /Vetra_Gantt_Database::audit/);
 assert.match(api, /register_rest_route\('vetra-gantt\/v1', \$route\[0\]/);
 assert.match(db, /audit_log/);
 assert.match(db, /rebuild_wbs/);
+assert.match(db, /normalize_hierarchy/);
+assert.match(db, /wbs_code varchar\(255\)/);
 assert.match(holidays, /iran-holidays\.json/);
 assert.match(holidays, /for_range/);
 assert.doesNotMatch(template, /name="wbs_code"/);
@@ -43,6 +45,10 @@ assert.match(ganttJs, /J\.parseOptional\(data\.start_jalali\)/, 'task form must 
 assert.match(ganttJs, /J\.parseOptional\(data\.end_jalali\)/, 'task form must tolerate empty optional dates');
 assert.match(ganttJs, /function commitValue/, 'grid must support inline cell commit');
 assert.match(ganttJs, /function saveDraft/, 'grid must support inline new-row creation');
+assert.match(ganttJs, /data-action="child"/, 'grid must support direct child creation');
+assert.match(ganttJs, /blankDraft\(Number\(task\.id\)\)/, 'child creation must preserve the parent');
+assert.match(ganttJs, /collapsed = new Set/, 'grid must support collapsed summary branches');
+assert.match(ganttJs, /data-action="toggle"/, 'summary rows must support collapse and expand');
 assert.match(ganttJs, /data-field="predecessors"/, 'predecessors must be editable inline');
 assert.match(ganttJs, /e\.key === 'Enter'/, 'Enter must commit and advance like a spreadsheet');
 assert.match(template, /<span>نوع<\/span>/, 'grid header must include type column');
