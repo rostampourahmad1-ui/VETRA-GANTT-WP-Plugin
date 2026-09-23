@@ -1,16 +1,26 @@
+/* Vetra Gantt — extensions: 9-column inline grid (adds نوع), editor cells, draft row. Loaded after base; selectors mirror base on purpose. */
 .vg-root .vg-grid-head,.vg-root .vg-row{grid-template-columns:60px minmax(140px,1.6fr) 84px 45px 96px 96px 110px 58px 118px;min-width:807px}
-.vg-root .vg-row input,.vg-root .vg-row select{width:100%;min-width:0;height:30px;border:1px solid transparent;border-radius:5px;background:transparent;color:inherit;padding:0 5px;font:inherit}
-.vg-root .vg-row input:hover:not(:disabled),.vg-root .vg-row select:hover:not(:disabled){background:#f8fafc;border-color:#e7e5e4}
-.vg-root .vg-row input:focus,.vg-root .vg-row select:focus{background:#fff;border-color:#b45309;outline:none}
-.vg-root .vg-row input:disabled,.vg-root .vg-row select:disabled{opacity:.45;background:#f5f5f4}
-.vg-root .vg-draft{background:#fffbeb}
-.vg-root .vg-draft input::placeholder{color:#c9c4be}
+.vg-root .vg-grid-head{position:sticky;top:0;z-index:2}
+.vg-root .vg-row{border-bottom-color:var(--vg-line-soft)}
+.vg-root .vg-row input,.vg-root .vg-row select{width:100%;min-width:0;height:30px;border:1px solid transparent;border-radius:6px;background:transparent;color:inherit;padding:0 6px;font-size:12px;font-variant-numeric:tabular-nums;transition:background .12s ease,border-color .12s ease,box-shadow .12s ease}
+.vg-root .vg-row input:hover:not(:disabled),.vg-root .vg-row select:hover:not(:disabled){background:var(--vg-bg);border-color:var(--vg-line)}
+.vg-root .vg-row input:focus,.vg-root .vg-row select:focus{background:var(--vg-surface);border-color:var(--vg-accent);box-shadow:0 0 0 3px var(--vg-ring);outline:none}
+.vg-root .vg-row input::placeholder{color:#b6bcc7}
+.vg-root .vg-row input:disabled,.vg-root .vg-row select:disabled{opacity:.42;background:var(--vg-bg);cursor:not-allowed}
+.vg-root .vg-draft{background:linear-gradient(90deg,#fffbeb,#fefce8)}
+.vg-root .vg-draft:hover{background:#fef3c7}
+.vg-root .vg-draft input::placeholder{color:#c9a25e}
 .vg-root .vg-summary input,.vg-root .vg-summary select{font-weight:700}
-.vg-root .vg-row-tools{display:flex;align-items:center;gap:1px;overflow:visible}
-.vg-root .vg-row-tools button{width:22px;height:26px;padding:0;border:0;background:transparent;color:#92400e}
+.vg-root .vg-row-tools{display:flex;align-items:center;gap:1px;overflow:visible;justify-content:center}
+.vg-root .vg-row-tools button{width:22px;height:26px;padding:0;border:0;border-radius:6px;background:transparent;color:#92400e;font-size:13px;line-height:1;transition:background .12s ease,color .12s ease}
+.vg-root .vg-row-tools button:hover:not(:disabled){background:var(--vg-accent-soft);color:var(--vg-accent-strong)}
 .vg-root .vg-row-tools button:disabled,.vg-root button:disabled{opacity:.5;cursor:wait}
 .vg-root .vg-form input:disabled{background:#f5f5f4;color:#78716c}
 .vg-root .vg-controls{flex-wrap:wrap}
-.vg-root .vg-grid-tip{margin:0;padding:4px 14px 8px;font-size:11px;color:#78716c;background:#f8fafc;border-bottom:1px solid #e5e7eb}
 @media(max-width:850px){.vg-root .vg-grid{width:807px}}
-@media(prefers-color-scheme:dark){.vg-root .vg-form input:disabled{background:#292524;color:#a8a29e}}
+@media(prefers-color-scheme:dark){.vg-root .vg-draft{background:linear-gradient(90deg,#272016,#221d17)}
+.vg-root .vg-draft:hover{background:#2b2318}
+.vg-root .vg-draft input::placeholder{color:#8d7a52}
+.vg-root .vg-row input::placeholder{color:#565c68}
+.vg-root .vg-row input:focus,.vg-root .vg-row select:focus{background:var(--vg-surface)}
+.vg-root .vg-form input:disabled{background:#292524;color:#a8a29e}}
