@@ -9,7 +9,7 @@
   document.querySelectorAll('.vg-root').forEach(root => {
     const q = s => root.querySelector(s), grid = q('.vg-grid-body'), chart = q('.vg-chart-body'), content = q('.vg-chart-content'), head = q('.vg-chart-head'), status = q('.vg-status'), dialog = q('.vg-dialog'), form = q('.vg-form'), deleteButton = q('.vg-delete');
     const projectId = Number(root.dataset.project);
-    let tasks = [], deps = [], project, editing = null, view = 'gantt', initialForm = '', pendingFocus = null, collapsed = new Set();
+    let tasks = [], deps = [], project, editing = null, view = 'gantt', initialForm = '', pendingFocus = null, collapsed = new Set(), wbsZoom = 1, ganttZoom = 1;
     const blankDraft = (parent_id = null) => ({title:'', task_type:'task', duration:'1', start:'', end:'', predecessors:'', weight:'0', parent_id});
     let draft = blankDraft();
     function message(text, error = false) { status.textContent = text; status.classList.toggle('vg-error', error); }
@@ -73,22 +73,27 @@
     }
     function render() {
       if (view === 'calendar') { renderCalendar(); return; }
-      const shown = visibleTasks();
+      const shown = visibleTasks(), rowHeight = 40 * wbsZoom;
       grid.innerHTML = shown.map(rowHtml).join('') + draftRow();
-      const {min,count} = columns(), zoom = q('.vg-zoom').value, width = zoom === 'day' ? 38 : zoom === 'week' ? 22 : 10, w = count * width;
+      const {min,count} = columns(), zoom = q('.vg-zoom').value, width = (zoom === 'day' ? 38 : zoom === 'week' ? 22 : 10) * ganttZoom, w = count * width;
+      root.style.setProperty('--vg-wbs-row-height', rowHeight + 'px');
+      root.style.setProperty('--vg-wbs-font-size', (12 * wbsZoom) + 'px');
+      root.querySelectorAll('[data-zoom-label="wbs"]').forEach(el => { el.textContent = Math.round(wbsZoom * 100) + '%'; });
+      root.querySelectorAll('[data-zoom-label="gantt"]').forEach(el => { el.textContent = Math.round(ganttZoom * 100) + '%'; });
       const x = date => ((utc(date) - min) / day) * width;
       head.innerHTML = `<div style="width:${w}px">${Array.from({length:count}, (_,i) => { const date = iso(min + i*day), j = J.gregorianToJalali(...date.split('-').map(Number)); const show = zoom === 'day' || (zoom === 'week' && new Date(min+i*day).getUTCDay() === 6) || (zoom === 'month' && j[2] === 1); return `<span style="width:${width}px">${show ? (zoom === 'month' ? months[j[1]-1] : j[2]) : ''}</span>`; }).join('')}</div>`;
-      content.style.width = w + 'px'; content.style.height = shown.length * 40 + 'px';
-      content.innerHTML = `<div class="vg-lines" style="background-size:${width}px 40px"></div>` + shown.map((t,i) => {
+      content.style.width = w + 'px'; content.style.height = shown.length * rowHeight + 'px';
+      content.innerHTML = `<div class="vg-lines" style="background-size:${width}px ${rowHeight}px"></div>` + shown.map((t,i) => {
         if (!t.start_date || !t.end_date) return '';
         const left = x(t.start_date), barWidth = Math.max(width * .65, x(t.end_date) - left + width);
-        return `<div class="vg-bar ${t.task_type === 'summary' ? 'vg-bar-summary' : ''} ${t.task_type === 'milestone' ? 'vg-milestone' : ''}" style="left:${left}px;top:${i*40+10}px;width:${t.task_type === 'milestone' ? 16 : barWidth}px" title="${escape(t.title)} — ${J.display(t.start_date)} تا ${J.display(t.end_date)}" aria-label="${escape(t.title)}"></div>`;
+        const milestone = t.task_type === 'milestone';
+        return `<div class="vg-bar ${t.task_type === 'summary' ? 'vg-bar-summary' : ''} ${milestone ? 'vg-milestone' : ''}" style="left:${left}px;top:${i*rowHeight+rowHeight*.25}px;width:${milestone ? rowHeight*.4 : barWidth}px;height:${Math.max(10,rowHeight*.5)}px" title="${escape(t.title)} — ${J.display(t.start_date)} تا ${J.display(t.end_date)}" aria-label="${escape(t.title)}"></div>`;
       }).join('') + `<div class="vg-today" style="left:${((Date.now()-min)/day)*width}px"></div>`;
       const byId = new Map(shown.map((t,i) => [Number(t.id),{t,i}]));
       const paths = deps.map(d => { const a = byId.get(Number(d.depends_on)), b = byId.get(Number(d.task_id)); if (!a || !b || !a.t.start_date || !b.t.start_date) return '';
-        const from = x(d.dep_type[0] === 'F' ? a.t.end_date : a.t.start_date) + (d.dep_type[0] === 'F' ? width : 0), to = x(d.dep_type[1] === 'F' ? b.t.end_date : b.t.start_date) + (d.dep_type[1] === 'F' ? width : 0), y1 = a.i*40+20, y2 = b.i*40+20, mid = from + (to >= from ? 8 : -8);
+        const from = x(d.dep_type[0] === 'F' ? a.t.end_date : a.t.start_date) + (d.dep_type[0] === 'F' ? width : 0), to = x(d.dep_type[1] === 'F' ? b.t.end_date : b.t.start_date) + (d.dep_type[1] === 'F' ? width : 0), y1 = a.i*rowHeight+rowHeight/2, y2 = b.i*rowHeight+rowHeight/2, mid = from + (to >= from ? 8 : -8);
         return `<path d="M${from} ${y1} H${mid} V${y2} H${to}"/>`; }).join('');
-      content.insertAdjacentHTML('beforeend', `<svg class="vg-arrows" width="${w}" height="${shown.length*40}" aria-hidden="true"><defs><marker id="vg-arrow-${projectId}" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6"/></marker></defs><g marker-end="url(#vg-arrow-${projectId})">${paths}</g></svg>`);
+      content.insertAdjacentHTML('beforeend', `<svg class="vg-arrows" width="${w}" height="${shown.length*rowHeight}" aria-hidden="true"><defs><marker id="vg-arrow-${projectId}" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6"/></marker></defs><g marker-end="url(#vg-arrow-${projectId})">${paths}</g></svg>`);
       if (window.VetraDatePicker) window.VetraDatePicker.init(grid);
       if (pendingFocus) {
         const el = grid.querySelector(`[data-id="${pendingFocus.row}"] [data-field="${pendingFocus.field}"]`);
@@ -176,6 +181,43 @@
       if (action === 'outdent') { if(!task.parent_id)return; const parent=tasks.find(t=>Number(t.id)===Number(task.parent_id)); task.parent_id=parent?.parent_id?Number(parent.parent_id):null; }
       await saveOrder();
     }
+    function exportExcel(target) {
+      const headers = target === 'gantt' ? ['WBS','عنوان','نوع','شروع شمسی','پایان شمسی','مدت روز کاری','پیش‌نیاز'] : target === 'wbs' ? ['WBS','عنوان','سطح','نوع','والد','مدت','شروع شمسی','پایان شمسی','پیش‌نیاز','سهم درصد'] : ['WBS','عنوان','سطح','نوع','والد','مدت','شروع شمسی','پایان شمسی','پیش‌نیاز','سهم درصد','حالت زمان‌بندی'];
+      const rows = tasks.map(t => {
+        const parent = tasks.find(item => Number(item.id) === Number(t.parent_id));
+        const common = [t.wbs_code, t.title, t.task_type, J.display(t.start_date), J.display(t.end_date), t.duration, predecessorText(t.id)];
+        if (target === 'gantt') return common;
+        const detail = [t.wbs_code, t.title, depth(t), t.task_type, parent?.wbs_code || '', t.duration, J.display(t.start_date), J.display(t.end_date), predecessorText(t.id), t.weight_percent];
+        return target === 'wbs' ? detail : detail.concat(t.schedule_mode);
+      });
+      const cell = value => `<td>${escape(value)}</td>`;
+      const html = `<!doctype html><html><head><meta charset="utf-8"></head><body dir="rtl"><table><thead><tr>${headers.map(cell).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+      const blob = new Blob(['\ufeff', html], {type:'application/vnd.ms-excel;charset=utf-8'});
+      const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `vetra-gantt-${projectId}-${target}.xls`; link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    }
+    function printTarget(target) {
+      root.dataset.printTarget = target;
+      const cleanup = () => { delete root.dataset.printTarget; window.removeEventListener('afterprint', cleanup); };
+      window.addEventListener('afterprint', cleanup);
+      window.setTimeout(cleanup, 3000);
+      window.print();
+    }
+    function zoneAction(action, target) {
+      if (action === 'zoom-in' || action === 'zoom-out') {
+        const direction = action === 'zoom-in' ? 0.1 : -0.1;
+        if (target === 'wbs') wbsZoom = Math.max(.8, Math.min(1.6, +(wbsZoom + direction).toFixed(2)));
+        if (target === 'gantt') ganttZoom = Math.max(.7, Math.min(2, +(ganttZoom + direction).toFixed(2)));
+        render();
+        return;
+      }
+      if (action === 'focus') {
+        if (root.dataset.focus === target) delete root.dataset.focus; else root.dataset.focus = target;
+        return;
+      }
+      if (action === 'excel') { exportExcel(target); return; }
+      if (action === 'print') printTarget(target);
+    }
     grid.addEventListener('input', e => {
       const input = e.target.closest('input,select'), rowEl = input?.closest('.vg-row');
       if (rowEl?.dataset.id === 'draft' && input?.dataset.field) draft[input.dataset.field === 'start_jalali' ? 'start' : input.dataset.field === 'end_jalali' ? 'end' : input.dataset.field] = input.value;
@@ -224,7 +266,8 @@
     });
     form.elements.task_type.addEventListener('change', syncFormMode); form.elements.schedule_mode.addEventListener('change', syncFormMode);
     if (window.VetraDatePicker) window.VetraDatePicker.init(root);
-    q('.vg-export').addEventListener('click', () => { const quote=v=>`"${String(v??'').replace(/"/g,'""')}"`; const rows=[['WBS','عنوان','نوع','مدت','شروع شمسی','پایان شمسی','پیش‌نیاز','سهم درصد'],...tasks.map(t=>[t.wbs_code,t.title,t.task_type,t.duration,J.display(t.start_date),J.display(t.end_date),predecessorText(t.id),t.weight_percent])]; const blob=new Blob(['\ufeff'+rows.map(r=>r.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}); const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`vetra-gantt-${projectId}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000); });
+    q('.vg-export').addEventListener('click', () => exportExcel('all'));
+    root.querySelectorAll('[data-zone-action]').forEach(button => button.addEventListener('click', () => zoneAction(button.dataset.zoneAction, button.dataset.zoneTarget)));
     q('.vg-zoom').addEventListener('change', render);
     root.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => { view=btn.dataset.view; root.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('vg-active',b===btn)); q('.vg-gantt').hidden=view!=='gantt'; q('.vg-calendar').hidden=view!=='calendar'; render(); }));
     grid.addEventListener('scroll', () => { chart.scrollTop=grid.scrollTop; });

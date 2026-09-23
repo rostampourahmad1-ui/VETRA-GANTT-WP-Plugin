@@ -5,7 +5,8 @@
     <div class="vg-controls">
       <button type="button" data-view="gantt" class="vg-active">گانت</button><button type="button" data-view="calendar">تقویم</button>
       <select class="vg-zoom" aria-label="مقیاس زمانی"><option value="day">روز</option><option value="week" selected>هفته</option><option value="month">ماه</option></select>
-      <button type="button" class="vg-export">خروجی CSV</button>
+      <button type="button" class="vg-export">Excel</button>
+      <button type="button" data-zone-action="print" data-zone-target="all">PDF / چاپ</button>
       <button type="button" class="vg-add">+ فعالیت</button>
     </div>
   </header>
@@ -13,11 +14,35 @@
   <p class="vg-grid-tip">ورود سریع: در ردیف آخر (ردیف جدید) تایپ کنید و Enter بزنید؛ برای ویرایش هر سلول روی آن کلیک/دوبار کلیک کنید و با Enter ذخیره می‌شود. برای ساخت زیرگروه روی ↳ و برای جمع/باز کردن خلاصه روی −/＋ بزنید. WBS به‌صورت خودکار چندسطحی ساخته می‌شود.</p>
   <div class="vg-gantt">
     <div class="vg-grid">
+      <div class="vg-zone-toolbar" data-zone="wbs">
+        <strong>WBS / فعالیت‌ها</strong>
+        <div class="vg-zone-actions">
+          <button type="button" data-zone-action="zoom-out" data-zone-target="wbs" aria-label="کوچک‌نمایی WBS" title="کوچک‌نمایی">−</button>
+          <span class="vg-zoom-label" data-zoom-label="wbs">100%</span>
+          <button type="button" data-zone-action="zoom-in" data-zone-target="wbs" aria-label="بزرگ‌نمایی WBS" title="بزرگ‌نمایی">+</button>
+          <button type="button" data-zone-action="focus" data-zone-target="wbs" aria-label="نمایش فقط WBS" title="نمایش فقط WBS">⛶</button>
+          <button type="button" data-zone-action="excel" data-zone-target="wbs" aria-label="خروجی Excel از WBS" title="خروجی Excel">XLS</button>
+          <button type="button" data-zone-action="print" data-zone-target="wbs" aria-label="چاپ یا PDF از WBS" title="چاپ / PDF">PDF</button>
+        </div>
+      </div>
       <div class="vg-grid-head"><span>WBS</span><span>نام فعالیت</span><span>نوع</span><span>مدت</span><span>شروع</span><span>پایان</span><span>پیش‌نیاز</span><span>سهم ٪</span><span>عملیات</span></div>
       <div class="vg-grid-body"></div>
     </div>
     <div class="vg-divider" role="separator" aria-label="تغییر عرض جدول" tabindex="0"></div>
-    <div class="vg-chart"><div class="vg-chart-head"></div><div class="vg-chart-body"><div class="vg-chart-content"></div></div></div>
+    <div class="vg-chart">
+      <div class="vg-zone-toolbar" data-zone="gantt">
+        <strong>Gantt / Timeline</strong>
+        <div class="vg-zone-actions">
+          <button type="button" data-zone-action="zoom-out" data-zone-target="gantt" aria-label="کوچک‌نمایی نمودار" title="کوچک‌نمایی">−</button>
+          <span class="vg-zoom-label" data-zoom-label="gantt">100%</span>
+          <button type="button" data-zone-action="zoom-in" data-zone-target="gantt" aria-label="بزرگ‌نمایی نمودار" title="بزرگ‌نمایی">+</button>
+          <button type="button" data-zone-action="focus" data-zone-target="gantt" aria-label="نمایش فقط نمودار گانت" title="نمایش فقط گانت">⛶</button>
+          <button type="button" data-zone-action="excel" data-zone-target="gantt" aria-label="خروجی Excel از نمودار" title="خروجی Excel">XLS</button>
+          <button type="button" data-zone-action="print" data-zone-target="gantt" aria-label="چاپ یا PDF از نمودار" title="چاپ / PDF">PDF</button>
+        </div>
+      </div>
+      <div class="vg-chart-head"></div><div class="vg-chart-body"><div class="vg-chart-content"></div></div>
+    </div>
   </div>
   <div class="vg-calendar" hidden></div>
   <dialog class="vg-dialog" aria-labelledby="vg-dialog-title">

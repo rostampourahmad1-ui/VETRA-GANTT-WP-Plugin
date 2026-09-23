@@ -52,6 +52,14 @@ assert.match(ganttJs, /data-action="toggle"/, 'summary rows must support collaps
 assert.match(ganttJs, /data-field="predecessors"/, 'predecessors must be editable inline');
 assert.match(ganttJs, /e\.key === 'Enter'/, 'Enter must commit and advance like a spreadsheet');
 assert.match(template, /<span>نوع<\/span>/, 'grid header must include type column');
+assert.match(template, /data-zone-action="zoom-in"/, 'each zone must expose zoom controls');
+assert.match(template, /data-zone-action="excel"/, 'each zone must expose Excel export');
+assert.match(template, /data-zone-action="print"/, 'each zone must expose print/PDF export');
+assert.match(ganttJs, /function exportExcel/, 'Excel export must be implemented');
+assert.match(ganttJs, /function printTarget/, 'print/PDF export must be implemented');
+assert.match(ganttJs, /function zoneAction/, 'zone controls must be wired');
+assert.match(read('assets/css/vetra-gantt.css'), /vg-focus-wbs/, 'WBS focus mode must be styled');
+assert.match(read('assets/css/vetra-gantt.css'), /@media print/, 'print/PDF layout must be styled');
 assert.match(read('assets/css/vetra-gantt-extensions.css'), /vg-draft/, 'draft row must be styled');
 assert.match(ganttJs, /VetraDatePicker\.init/, 'gantt view must init the date picker');
 assert.match(jalaliJs, /function parseOptional/, 'jalali module must expose parseOptional');
