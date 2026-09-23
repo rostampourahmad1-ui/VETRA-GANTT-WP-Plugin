@@ -4,9 +4,11 @@
 
 | حوزه | فایل | پوشش |
 |---|---|---|
-| شمسی | `tests/jalali.test.js` | رفت‌وبرگشت 1900 تا 2100، کبیسه، ارقام فارسی/عربی، ورودی نامعتبر |
-| قرارداد ایستا | `tests/static.test.js` | routeها، مجوز، rate limit، تراکنش، audit، WBS و حذف WBS دستی |
-| Scheduler | `tests/scheduler-test.php` | مدت، FS، milestone و چرخه وابستگی |
+| شمسی | `tests/jalali.test.js` | رفت‌وبرگشت 1900 تا 2100، کبیسه، ارقام فارسی/عربی، ورودی نامعتبر، `parseOptional`، helpers تقویم (monthLength/isLeap/toParts/weekdayIndex) |
+| تعطیلات رسمی | `tests/holidays.test.js` | ساختار `data/iran-holidays.json`، ترتیب، یکتایی، تبدیل‌پذیری شمسی، سیمولیشن `for_range` |
+| انتخاب‌گر تاریخ | `tests/datepicker.test.js` | گرید ماه (اختصار ۷، blanks، ترتیب روزها، اسفند کبیسه ۳۰/۲۹)، ستون شنبه، فرمت خروجی |
+| قرارداد ایستا | `tests/static.test.js` | routeها، مجوز، rate limit، تراکنش، audit، WBS، endpoint تعطیلات، data-jalali-picker، بارگذاری خودکار تعطیلات، نبود marker ناتمام |
+| Scheduler | `tests/scheduler-test.php` | مدت، FS، milestone، چرخه، **رد شدن خودکار از تعطیلات رسمی**، تعطیل دستی + رسمی |
 
 فرمان JavaScript: `npm test` و `npm run check`  
 فرمان PHP در محیط دارای PHP 7.4+: `php tests/scheduler-test.php`

@@ -22,12 +22,28 @@
     tbody.innerHTML = projects.map(p => { const shortcode = VG_ADMIN.shortcode.replace('%d', Number(p.id)); return `<tr data-id="${Number(p.id)}"><td data-label="عنوان"><strong>${escape(p.title)}</strong></td><td data-label="شروع" dir="ltr">${J.display(p.start_date)}</td><td data-label="فعالیت‌ها">${Number(p.task_count||0)}</td><td data-label="کد کوتاه"><code>${escape(shortcode)}</code></td><td data-label="عملیات"><div class="vg-row-actions"><button class="button" data-action="edit">ویرایش</button><button class="button" data-action="copy" data-code="${escape(shortcode)}">کپی کد</button><button class="button button-link-delete" data-action="delete">حذف</button></div></td></tr>`; }).join('');
   }
   async function load() { try { projects = await api('/projects'); render(); } catch (error) { q('.vg-project-loading').hidden=true; notify(error.message,true); } }
-  function open(project = null) {
+  function yearRange(startIso) { const y = Number(String(startIso).slice(0, 4)); return { from: y + '-01-01', to: (y + 2) + '-12-31' }; }
+  async function fillOfficialHolidays(replace) {
+    let startIso = null; try { startIso = J.parseOptional(form.elements.start_jalali.value); } catch (e) {}
+    if (!startIso) startIso = J.today();
+    const { from, to } = yearRange(startIso);
+    const res = await api(`/holidays?from=${from}&to=${to}`);
+    const lines = (res.holidays || []).map(h => J.display(h.date));
+    const existing = replace ? [] : form.elements.holidays_jalali.value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    form.elements.holidays_jalali.value = [...new Set([...existing, ...lines])].join('\n');
+  }
+  async function open(project = null) {
     editing = project; form.reset(); q('#vg-project-dialog-title').textContent = project ? 'ویرایش پروژه' : 'افزودن پروژه';
     const days = project ? String(project.workdays).split(',') : ['0','1','2','3','4','6'];
-    form.elements.title.value = project?.title || ''; form.elements.start_jalali.value = project ? J.display(project.start_date) : '';
+    form.elements.title.value = project?.title || '';
     form.querySelectorAll('[name=workdays]').forEach(box => { box.checked = days.includes(box.value); });
-    form.elements.holidays_jalali.value = project ? (project.holidays_list||[]).map(J.display).join('\n') : '';
+    if (project) {
+      form.elements.start_jalali.value = J.display(project.start_date);
+      form.elements.holidays_jalali.value = (project.holidays_list||[]).map(J.display).join('\n');
+    } else {
+      form.elements.start_jalali.value = J.display(J.today());
+      try { await fillOfficialHolidays(true); } catch (e) {}
+    }
     q('.vg-form-error').textContent=''; initialState=serialize(); dialog.showModal();
   }
   function close() { if (serialize() !== initialState && !window.confirm('تغییرات ذخیره‌نشده کنار گذاشته شود؟')) return; dialog.close(); }
@@ -41,6 +57,17 @@
     } catch(error){q('.vg-form-error').textContent=error.message;} finally{submit.disabled=false;}
   });
   q('.vg-project-add').addEventListener('click',()=>open()); q('.vg-project-cancel').addEventListener('click',close);
+  q('.vg-holidays-load').addEventListener('click', async () => {
+    const btn = q('.vg-holidays-load');
+    try { btn.disabled = true; await fillOfficialHolidays(false); initialState = serialize(); notify('تعطیلات رسمی بارگذاری شد.'); }
+    catch (e) { notify(e.message, true); }
+    finally { btn.disabled = false; }
+  });
+  form.elements.start_jalali.addEventListener('change', async () => {
+    if (editing) return;
+    try { await fillOfficialHolidays(true); initialState = serialize(); } catch (e) {}
+  });
+  if (window.VetraDatePicker) window.VetraDatePicker.init(root);
   dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
   tbody.addEventListener('click',async event=>{const button=event.target.closest('[data-action]');if(!button)return;const row=button.closest('tr'),project=projects.find(p=>Number(p.id)===Number(row.dataset.id));
     if(button.dataset.action==='edit')open(project);

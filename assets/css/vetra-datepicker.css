@@ -1,0 +1,14 @@
+.vg-picker-input{cursor:pointer;background:#fff}
+.vg-pk{z-index:99999;background:#fff;border:1px solid #d6d3d1;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:10px;width:302px;font:14px/1.6 Tahoma,sans-serif;direction:rtl}
+.vg-pk-head{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.vg-pk-head select{flex:1;border:1px solid #d6d3d1;border-radius:6px;background:#fff;padding:4px}
+.vg-pk-nav{border:1px solid #d6d3d1;border-radius:6px;background:#f8fafc;padding:4px 12px;font-size:16px}
+.vg-pk-nav:hover{background:#e2e8f0}
+.vg-pk-week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:#78716c;margin-bottom:4px}
+.vg-pk-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.vg-pk-days button{border:1px solid transparent;border-radius:6px;background:transparent;padding:4px 0;color:#292524;cursor:pointer}
+.vg-pk-days button:hover{background:#fff7ed;border-color:#fdba74}
+.vg-pk-blank{height:100%}
+.vg-pk-today{outline:1px solid #d97706}
+.vg-pk-sel{background:#b45309!important;color:#fff!important;border-color:#b45309!important}
+.vg-holiday-tools{display:flex;gap:8px;align-items:center}

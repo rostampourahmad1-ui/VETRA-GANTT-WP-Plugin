@@ -9,7 +9,8 @@ class Vetra_Gantt_RestAPI {
             array('/projects/(?P<id>\d+)/tasks', 'POST', 'create_task'),
             array('/projects/(?P<id>\d+)/reorder', 'POST', 'reorder_tasks'),
             array('/tasks/(?P<id>\d+)', 'PUT', 'update_task'),
-            array('/tasks/(?P<id>\d+)', 'DELETE', 'delete_task')
+            array('/tasks/(?P<id>\d+)', 'DELETE', 'delete_task'),
+            array('/holidays', 'GET', 'holidays')
         ) as $route) register_rest_route('vetra-gantt/v1', $route[0], array(
             'methods' => $route[1], 'callback' => array(__CLASS__, $route[2]),
             'permission_callback' => array(__CLASS__, 'authorize')
@@ -65,6 +66,13 @@ class Vetra_Gantt_RestAPI {
         foreach ($holidays as $holiday) if (!self::valid_date($holiday)) return self::error('تاریخ تعطیل نامعتبر است.');
         sort($workdays); sort($holidays);
         return array('title' => $title, 'start_date' => $start, 'workdays' => implode(',', $workdays), 'holidays' => wp_json_encode($holidays));
+    }
+    public static function holidays($request) {
+        $from = $request->get_param('from'); $to = $request->get_param('to');
+        if ($from && !self::valid_date($from)) return self::error('تاریخ مبدأ نامعتبر است.');
+        if ($to && !self::valid_date($to)) return self::error('تاریخ مقصد نامعتبر است.');
+        if ($from && $to && $to < $from) return self::error('بازه تاریخ نامعتبر است.');
+        return array('holidays' => $from || $to ? Vetra_Gantt_Holidays::for_range($from, $to) : Vetra_Gantt_Holidays::all());
     }
     public static function projects() {
         global $wpdb;

@@ -29,7 +29,9 @@ class Vetra_Gantt_Scheduler {
         if (!$days) $days = array(0, 1, 2, 3, 4, 6);
         $holidays = json_decode($project['holidays'] ?: '[]', true);
         if (!is_array($holidays)) $holidays = array();
-        $holidays = array_values(array_filter($holidays, function ($date) { return is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date); }));
+        $holidays = array_filter($holidays, function ($date) { return is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date); });
+        if (class_exists('Vetra_Gantt_Holidays')) $holidays = array_merge($holidays, Vetra_Gantt_Holidays::dates_in_range(null, null));
+        $holidays = array_values(array_unique($holidays));
         $calendar = array('days' => $days, 'holidays' => $holidays);
         $by_id = array(); $incoming = array(); $children = array();
         foreach ($rows as $row) {

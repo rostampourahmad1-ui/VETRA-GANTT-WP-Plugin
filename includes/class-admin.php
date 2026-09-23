@@ -11,8 +11,10 @@ class Vetra_Gantt_Admin {
     public static function enqueue($hook) {
         if ($hook !== 'toplevel_page_' . self::PAGE) return;
         wp_enqueue_style('vetra-gantt-admin', VG_URL . 'assets/css/vetra-admin.css', array(), VG_VERSION);
+        wp_enqueue_style('vetra-datepicker', VG_URL . 'assets/css/vetra-datepicker.css', array(), VG_VERSION);
         wp_enqueue_script('vetra-jalali', VG_URL . 'assets/js/vetra-jalali.js', array(), VG_VERSION, true);
-        wp_enqueue_script('vetra-gantt-admin', VG_URL . 'assets/js/vetra-admin.js', array('vetra-jalali'), VG_VERSION, true);
+        wp_enqueue_script('vetra-datepicker', VG_URL . 'assets/js/vetra-datepicker.js', array('vetra-jalali'), VG_VERSION, true);
+        wp_enqueue_script('vetra-gantt-admin', VG_URL . 'assets/js/vetra-admin.js', array('vetra-jalali', 'vetra-datepicker'), VG_VERSION, true);
         wp_localize_script('vetra-gantt-admin', 'VG_ADMIN', array(
             'restBase' => esc_url_raw(rest_url('vetra-gantt/v1')),
             'nonce' => wp_create_nonce('wp_rest'),

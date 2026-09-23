@@ -11,8 +11,11 @@ class Vetra_Gantt_Shortcode {
         if (!is_user_logged_in() || !current_user_can('edit_posts') || ((int) $project['created_by'] !== get_current_user_id() && !current_user_can('manage_options'))) return '<p>دسترسی به این پروژه مجاز نیست.</p>';
         wp_enqueue_style('vetra-gantt', VG_URL . 'assets/css/vetra-gantt.css', array(), VG_VERSION);
         wp_enqueue_style('vetra-gantt-extensions', VG_URL . 'assets/css/vetra-gantt-extensions.css', array('vetra-gantt'), VG_VERSION);
+        wp_enqueue_style('vetra-datepicker', VG_URL . 'assets/css/vetra-datepicker.css', array(), VG_VERSION);
         wp_enqueue_script('vetra-jalali', VG_URL . 'assets/js/vetra-jalali.js', array(), VG_VERSION, true);
-        wp_enqueue_script('vetra-gantt', VG_URL . 'assets/js/vetra-gantt.js', array('vetra-jalali'), VG_VERSION, true);
+        wp_enqueue_script('vetra-predecessors', VG_URL . 'assets/js/vetra-predecessors.js', array(), VG_VERSION, true);
+        wp_enqueue_script('vetra-datepicker', VG_URL . 'assets/js/vetra-datepicker.js', array('vetra-jalali'), VG_VERSION, true);
+        wp_enqueue_script('vetra-gantt', VG_URL . 'assets/js/vetra-gantt.js', array('vetra-jalali', 'vetra-predecessors', 'vetra-datepicker'), VG_VERSION, true);
         wp_localize_script('vetra-gantt', 'VG_CONFIG', array('restBase' => esc_url_raw(rest_url('vetra-gantt/v1')), 'nonce' => wp_create_nonce('wp_rest')));
         ob_start(); include VG_PATH . 'templates/gantt-view.php'; return ob_get_clean();
     }

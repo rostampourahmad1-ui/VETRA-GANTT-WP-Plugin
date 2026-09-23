@@ -8,11 +8,17 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const main = read('vetra-gantt.php');
 const api = read('includes/class-rest-api.php');
 const db = read('includes/class-database.php');
+const holidays = read('includes/class-holidays.php');
 const template = read('templates/gantt-view.php');
 const admin = read('includes/class-admin.php');
+const adminTpl = read('templates/admin-projects.php');
+const ganttJs = read('assets/js/vetra-gantt.js');
+const adminJs = read('assets/js/vetra-admin.js');
+const jalaliJs = read('assets/js/vetra-jalali.js');
 
-assert.match(main, /Version: 0\.6\.0/);
+assert.match(main, /Version: 1\.0\.0/);
 assert.match(main, /class-admin\.php/);
+assert.match(main, /class-holidays\.php/);
 assert.match(api, /update_project/);
 assert.match(api, /delete_project/);
 assert.match(api, /reorder_tasks/);
@@ -21,13 +27,33 @@ assert.match(api, /vg_rate_limit/);
 assert.match(api, /START TRANSACTION/);
 assert.match(api, /ROLLBACK/);
 assert.match(api, /Vetra_Gantt_Database::audit/);
+assert.match(api, /register_rest_route\('vetra-gantt\/v1', \$route\[0\]/);
 assert.match(db, /audit_log/);
 assert.match(db, /rebuild_wbs/);
+assert.match(holidays, /iran-holidays\.json/);
+assert.match(holidays, /for_range/);
 assert.doesNotMatch(template, /name="wbs_code"/);
 assert.match(template, /vg-export/);
+assert.match(template, /start_jalali" dir="ltr"[^>]*data-jalali-picker/, 'task start date must use the dropdown picker');
+assert.match(adminTpl, /data-jalali-picker/, 'project start date must use the dropdown picker');
+assert.match(adminTpl, /vg-holidays-load/, 'admin form must offer official holiday loading');
+assert.match(adminJs, /fillOfficialHolidays/, 'admin must auto-load official holidays');
+assert.match(adminJs, /\/holidays\?from=/, 'admin must fetch the holidays endpoint');
+assert.match(ganttJs, /J\.parseOptional\(data\.start_jalali\)/, 'task form must tolerate empty optional dates');
+assert.match(ganttJs, /J\.parseOptional\(data\.end_jalali\)/, 'task form must tolerate empty optional dates');
+assert.match(ganttJs, /function commitValue/, 'grid must support inline cell commit');
+assert.match(ganttJs, /function saveDraft/, 'grid must support inline new-row creation');
+assert.match(ganttJs, /data-field="predecessors"/, 'predecessors must be editable inline');
+assert.match(ganttJs, /e\.key === 'Enter'/, 'Enter must commit and advance like a spreadsheet');
+assert.match(template, /<span>نوع<\/span>/, 'grid header must include type column');
+assert.match(read('assets/css/vetra-gantt-extensions.css'), /vg-draft/, 'draft row must be styled');
+assert.match(ganttJs, /VetraDatePicker\.init/, 'gantt view must init the date picker');
+assert.match(jalaliJs, /function parseOptional/, 'jalali module must expose parseOptional');
 assert.match(admin, /current_user_can\('edit_posts'\)/);
+assert.match(admin, /vetra-datepicker\.js/, 'admin must enqueue the date picker');
+assert.match(read('includes/class-shortcode.php'), /vetra-datepicker\.js/, 'gantt view must enqueue the date picker');
 
-for (const file of ['assets/js/vetra-jalali.js','assets/js/vetra-gantt.js','assets/js/vetra-admin.js','includes/class-rest-api.php','includes/class-database.php']) {
+for (const file of ['assets/js/vetra-jalali.js','assets/js/vetra-predecessors.js','assets/js/vetra-gantt.js','assets/js/vetra-admin.js','assets/js/vetra-datepicker.js','includes/class-rest-api.php','includes/class-database.php','includes/class-holidays.php']) {
   const text = read(file);
   assert.ok(!/TODO|FIXME|not implemented/i.test(text), `${file} contains unfinished marker`);
 }

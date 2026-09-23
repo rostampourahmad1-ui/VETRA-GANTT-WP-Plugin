@@ -25,14 +25,39 @@ window.VetraJalali = (() => {
   }
   const pad = n => String(n).padStart(2, '0');
   function display(iso) { if (!iso) return '—'; const [y,m,d] = iso.split('-').map(Number); return gregorianToJalali(y,m,d).map((v,i) => i ? pad(v) : v).join('/'); }
+  function isLeap(jy) {
+    jy = Number(jy);
+    const g = jalaliToGregorian(jy, 12, 30), back = gregorianToJalali(g[0], g[1], g[2]);
+    return back[0] === jy && back[1] === 12 && back[2] === 30;
+  }
+  function monthLength(jy, jm) {
+    jm = Number(jm);
+    if (jm >= 1 && jm <= 6) return 31;
+    if (jm >= 7 && jm <= 11) return 30;
+    return isLeap(jy) ? 30 : 29;
+  }
+  function toParts(iso) {
+    if (!iso || typeof iso !== 'string') return null;
+    const [y,m,d] = iso.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    return gregorianToJalali(y,m,d);
+  }
+  function fromParts(jy, jm, jd) {
+    jy = Number(jy); jm = Number(jm); jd = Number(jd);
+    if (jm < 1 || jm > 12 || jd < 1 || jd > monthLength(jy, jm)) return null;
+    return jalaliToGregorian(jy, jm, jd).map((v,i) => i ? pad(v) : v).join('-');
+  }
+  function today() { const now = new Date(); return [now.getFullYear(), pad(now.getMonth() + 1), pad(now.getDate())].join('-'); }
+  function weekdayIndex(iso) { return (new Date(iso + 'T00:00:00Z').getUTCDay() + 1) % 7; }
   function parse(text) {
-    if (!text || !text.trim()) throw Error('تاریخشمسی نامعتبر است.');
-    const normalized = text.replace(/[۰-۹]/g, c => '۰۱۲۳۴۵۶۷۸۹'.indexOf(c)).replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c));
+    if (!text || !String(text).trim()) throw Error('تاریخ شمسی نامعتبر است.');
+    const normalized = String(text).replace(/[۰-۹]/g, c => '۰۱۲۳۴۵۶۷۸۹'.indexOf(c)).replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c));
     const m = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/.exec(normalized.trim());
     if (!m) throw Error('تاریخ شمسی نامعتبر است.');
     const parts = m.slice(1).map(Number), g = jalaliToGregorian(...parts);
     if (parts[1] < 1 || parts[1] > 12 || parts[2] < 1 || parts[2] > 31 || gregorianToJalali(...g).join('/') !== parts.join('/')) throw Error('تاریخ شمسی نامعتبر است.');
     return g.map((v,i) => i ? pad(v) : v).join('-');
   }
-  return { display, parse, gregorianToJalali, jalaliToGregorian };
+  function parseOptional(text) { return text && String(text).trim() ? parse(text) : null; }
+  return { display, parse, parseOptional, today, isLeap, monthLength, toParts, fromParts, weekdayIndex, gregorianToJalali, jalaliToGregorian };
 })();
