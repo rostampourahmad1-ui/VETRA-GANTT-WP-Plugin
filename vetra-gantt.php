@@ -2,12 +2,12 @@
 /**
  * Plugin Name: Vetra Gantt
  * Description: برنامه‌ریزی پروژه با WBS، گانت و تقویم جلالی
- * Version: 1.1.1
+ * Version: 1.1.2
  * Requires PHP: 7.4
  * Text Domain: vetra-gantt
  */
 defined('ABSPATH') || exit;
-define('VG_VERSION', '1.1.1');
+define('VG_VERSION', '1.1.2');
 define('VG_PATH', plugin_dir_path(__FILE__));
 define('VG_URL', plugin_dir_url(__FILE__));
 require_once VG_PATH . 'includes/class-database.php';

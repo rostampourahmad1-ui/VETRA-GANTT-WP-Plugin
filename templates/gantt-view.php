@@ -2,10 +2,16 @@
 <section class="vg-root" dir="rtl" data-project="<?php echo esc_attr($project_id); ?>" style="--vg-height:<?php echo esc_attr($height); ?>px">
   <header class="vg-toolbar">
     <div class="vg-brand"><strong><?php echo esc_html($project['title']); ?></strong><small>وترا گانت</small></div>
+    <nav class="vg-tabs" aria-label="نماهای پروژه">
+      <button type="button" data-view="wbs">WBS</button>
+      <button type="button" data-view="gantt">Gantt</button>
+      <button type="button" data-view="integrated" class="vg-active">ادغام</button>
+      <button type="button" data-view="calendar">تقویم</button>
+      <button type="button" data-view="timeline">Timeline</button>
+    </nav>
     <div class="vg-controls">
-      <button type="button" data-view="gantt" class="vg-active">گانت</button><button type="button" data-view="calendar">تقویم</button>
       <select class="vg-zoom" aria-label="مقیاس زمانی"><option value="day">روز</option><option value="week" selected>هفته</option><option value="month">ماه</option></select>
-      <div class="vg-io-wrap"><button type="button" class="vg-io-toggle" data-io-toggle="import" aria-expanded="false">⇧ درون‌ریزی</button><div class="vg-io-menu" data-io-panel="import" hidden><strong>درون‌ریزی</strong><button type="button" data-import-trigger="excel">Excel / CSV</button><button type="button" data-import-trigger="mpp">فایل MPP</button><input type="file" data-import-file="excel" accept=".csv,.xls" hidden><input type="file" data-import-file="mpp" accept=".mpp" hidden><small>Excel/CSV درون‌ریزی می‌شود؛ برای MPP ابتدا به Excel یا CSV تبدیل کنید.</small></div></div>
+      <div class="vg-io-wrap"><button type="button" class="vg-io-toggle" data-io-toggle="import" aria-expanded="false">⇧ درون‌ریزی</button><div class="vg-io-menu" data-io-panel="import" hidden><strong>درون‌ریزی</strong><button type="button" data-import-trigger="excel">Excel / CSV</button><button type="button" data-import-trigger="mpp">MPP / XML</button><input type="file" data-import-file="excel" accept=".csv,.xls" hidden><input type="file" data-import-file="mpp" accept=".mpp,.xml" hidden><small>فایل XML خروجی Microsoft Project مستقیم خوانده می‌شود؛ MPP باینری باید ابتدا به XML تبدیل شود.</small></div></div>
       <button type="button" class="vg-add">+ فعالیت</button>
     </div>
   </header>
@@ -38,7 +44,8 @@
     </div>
   </div>
   <div class="vg-calendar" hidden></div>
-  <footer class="vg-bottom-toolbar"><span>خروجی و چاپ</span><div class="vg-io-wrap"><button type="button" class="vg-export vg-io-toggle" data-io-toggle="export" aria-expanded="false" aria-label="نمایش منوی خروجی" title="خروجی گرفتن">⇩</button><div class="vg-io-menu vg-io-menu-bottom" data-io-panel="export" hidden><strong>خروجی</strong><button type="button" data-zone-action="excel" data-zone-target="all">Excel همه داده‌ها</button><button type="button" data-zone-action="excel" data-zone-target="wbs">Excel فقط WBS</button><button type="button" data-zone-action="excel" data-zone-target="gantt">Excel فقط Gantt</button><hr><button type="button" data-zone-action="print" data-zone-target="all">PDF / چاپ همه</button><button type="button" data-zone-action="print" data-zone-target="wbs">PDF / چاپ WBS</button><button type="button" data-zone-action="print" data-zone-target="gantt">PDF / چاپ Gantt</button></div></div></footer>
+  <div class="vg-timeline" hidden></div>
+  <footer class="vg-bottom-toolbar"><span>خروجی و چاپ</span><div class="vg-io-wrap"><button type="button" class="vg-export vg-io-toggle" data-io-toggle="export" aria-expanded="false" aria-label="نمایش منوی خروجی" title="خروجی گرفتن">⇩</button><div class="vg-io-menu vg-io-menu-bottom" data-io-panel="export" hidden><strong>خروجی</strong><button type="button" data-export-target="all">Excel همه داده‌ها</button><button type="button" data-export-target="wbs">Excel فقط WBS</button><button type="button" data-export-target="gantt">Excel فقط Gantt</button><hr><button type="button" data-print-target="all">PDF / چاپ همه</button><button type="button" data-print-target="wbs">PDF / چاپ WBS</button><button type="button" data-print-target="gantt">PDF / چاپ Gantt</button></div></div></footer>
   <dialog class="vg-dialog" aria-labelledby="vg-dialog-title">
     <form class="vg-form">
       <h2 id="vg-dialog-title">فعالیت</h2>

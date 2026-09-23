@@ -17,7 +17,7 @@ const ganttJs = read('assets/js/vetra-gantt.js');
 const adminJs = read('assets/js/vetra-admin.js');
 const jalaliJs = read('assets/js/vetra-jalali.js');
 
-assert.match(main, /Version: 1\.1\.1/);
+assert.match(main, /Version: 1\.1\.2/);
 assert.match(main, /class-admin\.php/);
 assert.match(main, /class-holidays\.php/);
 assert.match(api, /update_project/);
@@ -54,8 +54,11 @@ assert.match(ganttJs, /data-field="predecessors"/, 'predecessors must be editabl
 assert.match(ganttJs, /e\.key === 'Enter'/, 'Enter must commit and advance like a spreadsheet');
 assert.match(template, /<span>نوع<\/span>/, 'grid header must include type column');
 assert.match(template, /data-zone-action="zoom-in"/, 'each zone must expose zoom controls');
-assert.match(template, /data-zone-action="excel"/, 'each zone must expose Excel export');
-assert.match(template, /data-zone-action="print"/, 'each zone must expose print/PDF export');
+assert.match(template, /data-export-target="wbs"/, 'WBS Excel export must exist');
+assert.match(template, /data-print-target="wbs"/, 'WBS print/PDF export must exist');
+assert.match(template, /data-view="timeline"/, 'timeline view tab must exist');
+assert.match(template, /data-view="integrated"/, 'integrated view tab must exist');
+assert.match(ganttJs, /function renderTimeline/, 'timeline view must be implemented');
 assert.match(ganttJs, /function exportExcel/, 'Excel export must be implemented');
 assert.match(ganttJs, /function printTarget/, 'print/PDF export must be implemented');
 assert.match(ganttJs, /function zoneAction/, 'zone controls must be wired');
@@ -77,6 +80,7 @@ assert.match(template, /data-import-trigger="mpp"/, 'MPP import trigger must exi
 assert.match(template, /vg-bottom-toolbar/, 'export controls must be at the bottom');
 assert.match(template, /data-zone-target="wbs"/, 'WBS-specific actions must exist');
 assert.match(ganttJs, /function importExcelFile/, 'Excel import must be implemented');
+assert.match(ganttJs, /function importProjectXml/, 'Microsoft Project XML import must be implemented');
 assert.match(ganttJs, /function printTarget/, 'print/PDF output must be implemented');
 
 for (const file of ['assets/js/vetra-jalali.js','assets/js/vetra-predecessors.js','assets/js/vetra-gantt.js','assets/js/vetra-admin.js','assets/js/vetra-datepicker.js','includes/class-rest-api.php','includes/class-database.php','includes/class-holidays.php']) {

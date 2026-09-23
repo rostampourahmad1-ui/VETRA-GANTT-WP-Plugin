@@ -7,9 +7,9 @@
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const { parsePredecessors } = window.VetraGanttUtil;
   document.querySelectorAll('.vg-root').forEach(root => {
-    const q = s => root.querySelector(s), grid = q('.vg-grid-body'), chart = q('.vg-chart-body'), content = q('.vg-chart-content'), head = q('.vg-chart-head'), status = q('.vg-status'), dialog = q('.vg-dialog'), form = q('.vg-form'), deleteButton = q('.vg-delete');
+    const q = s => root.querySelector(s), grid = q('.vg-grid-body'), chart = q('.vg-chart-body'), content = q('.vg-chart-content'), head = q('.vg-chart-head'), status = q('.vg-status'), dialog = q('.vg-dialog'), form = q('.vg-form'), deleteButton = q('.vg-delete'), timeline = q('.vg-timeline');
     const projectId = Number(root.dataset.project);
-    let tasks = [], deps = [], project, editing = null, view = 'gantt', initialForm = '', pendingFocus = null, collapsed = new Set(), wbsZoom = 1, ganttZoom = 1;
+    let tasks = [], deps = [], project, editing = null, view = 'integrated', monthOffset = 0, initialForm = '', pendingFocus = null, collapsed = new Set(), wbsZoom = 1, ganttZoom = 1;
     if (window.VG_CONFIG?.defaultZoom && ['day','week','month'].includes(window.VG_CONFIG.defaultZoom)) q('.vg-zoom').value = window.VG_CONFIG.defaultZoom;
     if (window.VG_CONFIG?.theme && window.VG_CONFIG.theme !== 'system') root.dataset.theme = window.VG_CONFIG.theme;
     if (window.VG_CONFIG && VG_CONFIG.glass === false) root.dataset.glass = '0';
@@ -75,7 +75,13 @@
         + `<span class="vg-row-tools"><button type="button" data-action="add" title="افزودن ردیف" aria-label="افزودن ردیف">＋</button></span></div>`;
     }
     function render() {
+      root.dataset.view = view;
+      q('.vg-gantt').hidden = !['integrated','wbs','gantt'].includes(view);
+      q('.vg-calendar').hidden = view !== 'calendar';
+      timeline.hidden = view !== 'timeline';
+      root.querySelectorAll('[data-view]').forEach(button => button.classList.toggle('vg-active', button.dataset.view === view));
       if (view === 'calendar') { renderCalendar(); return; }
+      if (view === 'timeline') { renderTimeline(); return; }
       const shown = visibleTasks(), rowHeight = 40 * wbsZoom;
       grid.innerHTML = shown.map(rowHtml).join('') + draftRow();
       const {min,count} = columns(), zoom = q('.vg-zoom').value, width = (zoom === 'day' ? 38 : zoom === 'week' ? 22 : 10) * ganttZoom, w = count * width;
@@ -106,12 +112,20 @@
     }
     function renderCalendar() {
       const el = q('.vg-calendar'), anchor = tasks.find(t => t.start_date)?.start_date || project.start_date;
-      const [jy,jm] = J.gregorianToJalali(...anchor.split('-').map(Number));
+      const [baseYear,baseMonth] = J.gregorianToJalali(...anchor.split('-').map(Number));
+      const absoluteMonth = baseYear * 12 + baseMonth - 1 + monthOffset, jy = Math.floor(absoluteMonth / 12), jm = absoluteMonth % 12 + 1;
       const first = J.jalaliToGregorian(jy,jm,1).map((n,i) => i ? String(n).padStart(2,'0') : n).join('-');
       const next = jm === 12 ? J.jalaliToGregorian(jy+1,1,1) : J.jalaliToGregorian(jy,jm+1,1);
       const end = next.map((n,i) => i ? String(n).padStart(2,'0') : n).join('-');
       const pad = (new Date(utc(first)).getUTCDay()+1)%7, days = Math.round((utc(end)-utc(first))/day);
-      el.innerHTML = `<h3>${months[jm-1]} ${jy}</h3><div class="vg-calendar-grid">${['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'].map(s => `<strong>${s}</strong>`).join('')}${'<div></div>'.repeat(pad)}${Array.from({length:days},(_,i) => { const date=iso(utc(first)+i*day); const active=tasks.filter(t=>t.task_type!=='summary' && t.start_date<=date && t.end_date>=date); return `<div><b>${i+1}</b>${active.slice(0,3).map(t=>`<small title="${escape(t.title)}">${escape(t.title)}</small>`).join('')}${active.length>3?`<small>+${active.length-3}</small>`:''}</div>`; }).join('')}</div>`;
+      el.innerHTML = `<div class="vg-calendar-head"><button type="button" data-calendar-nav="prev">‹ ماه قبل</button><h3>${months[jm-1]} ${jy}</h3><button type="button" data-calendar-nav="next">ماه بعد ›</button></div><div class="vg-calendar-grid">${['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'].map(s => `<strong>${s}</strong>`).join('')}${'<div></div>'.repeat(pad)}${Array.from({length:days},(_,i) => { const date=iso(utc(first)+i*day); const active=tasks.filter(t=>t.task_type!=='summary' && t.start_date<=date && t.end_date>=date); return `<div><b>${i+1}</b>${active.slice(0,3).map(t=>`<small title="${escape(t.title)}">${escape(t.title)}</small>`).join('')}${active.length>3?`<small>+${active.length-3}</small>`:''}</div>`; }).join('')}</div>`;
+      el.querySelectorAll('[data-calendar-nav]').forEach(button => button.addEventListener('click', () => { monthOffset += button.dataset.calendarNav === 'next' ? 1 : -1; renderCalendar(); }));
+    }
+    function renderTimeline() {
+      const dates = tasks.flatMap(task => [task.start_date, task.end_date].filter(Boolean));
+      if (!dates.length) { timeline.innerHTML = '<p class="vg-empty">برای نمایش Timeline هنوز تاریخ معتبری ثبت نشده است.</p>'; return; }
+      const min = Math.min(...dates.map(utc)), max = Math.max(...dates.map(utc)), span = Math.max(day, max - min + day), width = Math.max(760, Math.ceil(span / day) * 4);
+      timeline.innerHTML = `<div class="vg-timeline-head"><strong>Timeline پروژه</strong><small>${J.display(iso(min))} تا ${J.display(iso(max))}</small></div><div class="vg-timeline-body" style="--vg-timeline-width:${width}px">${tasks.filter(task => task.start_date && task.end_date).map((task, index) => { const left = ((utc(task.start_date) - min) / span) * width, bar = Math.max(12, ((utc(task.end_date) - utc(task.start_date) + day) / span) * width); return `<div class="vg-timeline-row"><span class="vg-timeline-label" style="padding-inline-start:${depth(task) * 16 + 6}px">${escape(task.wbs_code)} ${escape(task.title)}</span><div class="vg-timeline-track"><span class="vg-timeline-bar ${task.task_type === 'summary' ? 'vg-timeline-summary' : ''}" style="left:${left}px;width:${bar}px"></span></div></div>`; }).join('')}</div>`;
     }
     async function commitValue(rowId, field, raw) {
       const task = tasks.find(x => String(x.id) === rowId); if (!task) return;
@@ -215,7 +229,8 @@
         return;
       }
       if (action === 'focus') {
-        if (root.dataset.focus === target) delete root.dataset.focus; else root.dataset.focus = target;
+        view = view === target ? 'integrated' : target;
+        render();
         return;
       }
       if (action === 'excel') { exportExcel(target); return; }
@@ -287,11 +302,42 @@
       await load();
       message(`${created.length} فعالیت از فایل وارد شد.`);
     }
+    async function importProjectXml(file) {
+      const xml = await file.text(), doc = new DOMParser().parseFromString(xml, 'application/xml');
+      if (doc.querySelector('parsererror')) throw Error('فایل XML پروژه معتبر نیست.');
+      const value = (node, name) => node.getElementsByTagName(name)[0]?.textContent?.trim() || '';
+      const xmlDate = text => { const time = Date.parse(text); return Number.isNaN(time) ? null : new Date(time).toISOString().slice(0, 10); };
+      const xmlDuration = text => { const match = /PT(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?/.exec(text || ''); const hours = Number(match?.[1] || 0) + Number(match?.[2] || 0) / 60; return hours ? Math.max(1, Math.round(hours / 8)) : 1; };
+      const nodes = [...doc.getElementsByTagName('Task')].filter(node => value(node, 'UID') !== '0' && value(node, 'Name'));
+      if (!nodes.length) throw Error('در فایل XML فعالیتی پیدا نشد.');
+      const imported = nodes.map((node, index) => ({node, index, uid:value(node, 'UID'), wbs:value(node, 'OutlineNumber') || String(index + 1), depth:Number(value(node, 'OutlineLevel')) || (value(node, 'OutlineNumber').split('.').length || 1)}));
+      imported.sort((a, b) => a.depth - b.depth || a.index - b.index);
+      const created = [];
+      for (const item of imported) {
+        const node = item.node, parentWbs = item.wbs.includes('.') ? item.wbs.split('.').slice(0, -1).join('.') : '';
+        const summary = value(node, 'Summary').toLowerCase() === '1' || value(node, 'Summary').toLowerCase() === 'true';
+        const milestone = value(node, 'Milestone').toLowerCase() === '1' || value(node, 'Milestone').toLowerCase() === 'true';
+        const body = {title:value(node, 'Name'), task_type:summary ? 'summary' : milestone ? 'milestone' : 'task', schedule_mode:'auto', duration:milestone ? 0 : xmlDuration(value(node, 'Duration')), parent_id:created.find(row => row.wbs === parentWbs)?.id || null};
+        const start = xmlDate(value(node, 'Start')); if (start) body.start_date = start;
+        const result = await api(`/projects/${projectId}/tasks`, 'POST', body);
+        const predecessorLinks = [...node.getElementsByTagName('PredecessorLink')].map(link => ({uid:value(link, 'PredecessorUID'), type:Number(value(link, 'Type'))})).filter(link => link.uid);
+        created.push({id:Number(result.id), uid:item.uid, wbs:item.wbs, predecessors:predecessorLinks});
+      }
+      const relation = {0:'FF',1:'FS',2:'SF',3:'SS'};
+      for (const item of created) {
+        const dependencies = item.predecessors.map(link => { const predecessor = created.find(row => row.uid === link.uid); return predecessor ? {depends_on:predecessor.id, dep_type:relation[link.type] || 'FS', lag_days:0} : null; }).filter(Boolean);
+        if (dependencies.length) await api(`/tasks/${item.id}`, 'PUT', {dependencies});
+      }
+      await load();
+      message(`${created.length} فعالیت از XML پروژه وارد شد.`);
+    }
     async function importFile(kind, file) {
       if (!file) return;
       try {
-        if (kind === 'mpp') throw Error('خواندن مستقیم فایل MPP در مرورگر فعال نیست؛ فایل MPP را ابتدا به Excel یا CSV تبدیل کنید.');
-        await importExcelFile(file);
+        if (kind === 'mpp') {
+          if (/\.xml$/i.test(file.name)) await importProjectXml(file);
+          else throw Error('فایل MPP باینری قابل خواندن مستقیم نیست؛ از Microsoft Project خروجی XML بگیرید و همان را انتخاب کنید.');
+        } else await importExcelFile(file);
       } catch (error) { message(error.message, true); }
     }
     grid.addEventListener('input', e => {
@@ -351,9 +397,11 @@
     root.querySelectorAll('[data-import-trigger]').forEach(button => button.addEventListener('click', () => root.querySelector(`[data-import-file="${button.dataset.importTrigger}"]`).click()));
     root.querySelectorAll('[data-import-file]').forEach(input => input.addEventListener('change', async () => { await importFile(input.dataset.importFile, input.files[0]); input.value = ''; closeIoMenus(); }));
     document.addEventListener('click', event => { if (!root.contains(event.target)) closeIoMenus(); });
+    root.querySelectorAll('[data-export-target]').forEach(button => button.addEventListener('click', () => { exportExcel(button.dataset.exportTarget); closeIoMenus(); }));
+    root.querySelectorAll('[data-print-target]').forEach(button => button.addEventListener('click', () => { printTarget(button.dataset.printTarget); closeIoMenus(); }));
     root.querySelectorAll('[data-zone-action]').forEach(button => button.addEventListener('click', () => zoneAction(button.dataset.zoneAction, button.dataset.zoneTarget)));
     q('.vg-zoom').addEventListener('change', render);
-    root.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => { view=btn.dataset.view; root.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('vg-active',b===btn)); q('.vg-gantt').hidden=view!=='gantt'; q('.vg-calendar').hidden=view!=='calendar'; render(); }));
+    root.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => { view = btn.dataset.view; render(); }));
     grid.addEventListener('scroll', () => { chart.scrollTop=grid.scrollTop; });
     chart.addEventListener('scroll', () => { grid.scrollTop=chart.scrollTop; head.scrollLeft=chart.scrollLeft; });
     const divider=q('.vg-divider'); divider.addEventListener('pointerdown', e => { divider.setPointerCapture(e.pointerId); });
