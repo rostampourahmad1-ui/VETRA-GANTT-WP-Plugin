@@ -10,6 +10,9 @@
     const q = s => root.querySelector(s), grid = q('.vg-grid-body'), chart = q('.vg-chart-body'), content = q('.vg-chart-content'), head = q('.vg-chart-head'), status = q('.vg-status'), dialog = q('.vg-dialog'), form = q('.vg-form'), deleteButton = q('.vg-delete');
     const projectId = Number(root.dataset.project);
     let tasks = [], deps = [], project, editing = null, view = 'gantt', initialForm = '', pendingFocus = null, collapsed = new Set(), wbsZoom = 1, ganttZoom = 1;
+    if (window.VG_CONFIG?.defaultZoom && ['day','week','month'].includes(window.VG_CONFIG.defaultZoom)) q('.vg-zoom').value = window.VG_CONFIG.defaultZoom;
+    if (window.VG_CONFIG?.theme && window.VG_CONFIG.theme !== 'system') root.dataset.theme = window.VG_CONFIG.theme;
+    if (window.VG_CONFIG && VG_CONFIG.glass === false) root.dataset.glass = '0';
     const blankDraft = (parent_id = null) => ({title:'', task_type:'task', duration:'1', start:'', end:'', predecessors:'', weight:'0', parent_id});
     let draft = blankDraft();
     function message(text, error = false) { status.textContent = text; status.classList.toggle('vg-error', error); }
@@ -218,6 +221,79 @@
       if (action === 'excel') { exportExcel(target); return; }
       if (action === 'print') printTarget(target);
     }
+    function parseDelimited(text) {
+      const rows = [], row = []; let field = '', quoted = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i], next = text[i + 1];
+        if (char === '"' && quoted && next === '"') { field += '"'; i++; continue; }
+        if (char === '"') { quoted = !quoted; continue; }
+        if (char === ',' && !quoted) { row.push(field.trim()); field = ''; continue; }
+        if ((char === '\n' || char === '\r') && !quoted) {
+          if (char === '\r' && next === '\n') i++;
+          row.push(field.trim()); field = '';
+          if (row.some(value => value !== '')) rows.push(row.splice(0));
+          continue;
+        }
+        field += char;
+      }
+      row.push(field.trim()); if (row.some(value => value !== '')) rows.push(row);
+      return rows;
+    }
+    function parseImportTable(text) {
+      if (/<table[\s>]/i.test(text)) {
+        const doc = new DOMParser().parseFromString(text, 'text/html');
+        return [...doc.querySelectorAll('tr')].map(tr => [...tr.querySelectorAll('th,td')].map(cell => cell.textContent.trim())).filter(row => row.length);
+      }
+      return parseDelimited(text.replace(/^\ufeff/, ''));
+    }
+    function importDate(value) {
+      const text = String(value ?? '').trim();
+      if (!text || text === '—') return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+      return J.parse(text);
+    }
+    function headerIndex(headers, names) {
+      return headers.findIndex(header => names.some(name => String(header).replace(/\s/g, '').includes(name)));
+    }
+    async function importExcelFile(file) {
+      const rows = parseImportTable(await file.text());
+      if (rows.length < 2) throw Error('فایل Excel/CSV ردیف قابل استفاده ندارد.');
+      const headers = rows.shift().map(value => String(value).toLowerCase());
+      const indexes = {
+        wbs: headerIndex(headers, ['wbs']), title: headerIndex(headers, ['عنوان','نامفعالیت','title','name']), type: headerIndex(headers, ['نوع','type']),
+        duration: headerIndex(headers, ['مدت','duration']), start: headerIndex(headers, ['شروعشمسی','شروع','start']), end: headerIndex(headers, ['پایانشمسی','پایان','finish','end']),
+        predecessors: headerIndex(headers, ['پیشنیاز','predecessor','dependency']), weight: headerIndex(headers, ['سهمدرصد','سهم','weight']), mode: headerIndex(headers, ['حالتیزمانبندی','schedule'])
+      };
+      if (indexes.title < 0) throw Error('ستون عنوان فعالیت در فایل پیدا نشد.');
+      const imported = rows.map((row, index) => ({row, index, wbs: indexes.wbs >= 0 ? String(row[indexes.wbs] || '').trim() : String(index + 1), depth: String(indexes.wbs >= 0 ? row[indexes.wbs] || '' : '').split('.').length})).filter(item => item.row[indexes.title] && String(item.row[indexes.title]).trim());
+      imported.sort((a, b) => a.depth - b.depth || a.index - b.index);
+      const created = [];
+      for (const item of imported) {
+        const row = item.row, parentWbs = item.wbs.includes('.') ? item.wbs.split('.').slice(0, -1).join('.') : '';
+        const typeValue = indexes.type >= 0 ? String(row[indexes.type] || '').toLowerCase() : 'task';
+        const taskType = typeValue.includes('summary') || typeValue.includes('خلاصه') ? 'summary' : typeValue.includes('milestone') || typeValue.includes('عطف') ? 'milestone' : 'task';
+        const body = {title:String(row[indexes.title]).trim(), task_type:taskType, schedule_mode:'auto', duration:indexes.duration >= 0 ? Number(row[indexes.duration]) || 1 : 1, weight_percent:indexes.weight >= 0 ? Number(row[indexes.weight]) || 0 : 0, parent_id:created.find(item => item.wbs === parentWbs)?.id || null};
+        if (indexes.mode >= 0 && String(row[indexes.mode] || '').toLowerCase().includes('manual')) body.schedule_mode = 'manual';
+        if (indexes.start >= 0) body.start_date = importDate(row[indexes.start]);
+        if (indexes.end >= 0 && row[indexes.end]) { body.end_date = importDate(row[indexes.end]); body.schedule_mode = 'manual'; }
+        const result = await api(`/projects/${projectId}/tasks`, 'POST', body);
+        created.push({id:Number(result.id), wbs:item.wbs, predecessors:indexes.predecessors >= 0 ? String(row[indexes.predecessors] || '') : ''});
+      }
+      for (const item of created) {
+        if (!item.predecessors.trim()) continue;
+        const dependencies = parsePredecessors(item.predecessors, created, item.id);
+        await api(`/tasks/${item.id}`, 'PUT', {dependencies});
+      }
+      await load();
+      message(`${created.length} فعالیت از فایل وارد شد.`);
+    }
+    async function importFile(kind, file) {
+      if (!file) return;
+      try {
+        if (kind === 'mpp') throw Error('خواندن مستقیم فایل MPP در مرورگر فعال نیست؛ فایل MPP را ابتدا به Excel یا CSV تبدیل کنید.');
+        await importExcelFile(file);
+      } catch (error) { message(error.message, true); }
+    }
     grid.addEventListener('input', e => {
       const input = e.target.closest('input,select'), rowEl = input?.closest('.vg-row');
       if (rowEl?.dataset.id === 'draft' && input?.dataset.field) draft[input.dataset.field === 'start_jalali' ? 'start' : input.dataset.field === 'end_jalali' ? 'end' : input.dataset.field] = input.value;
@@ -266,7 +342,15 @@
     });
     form.elements.task_type.addEventListener('change', syncFormMode); form.elements.schedule_mode.addEventListener('change', syncFormMode);
     if (window.VetraDatePicker) window.VetraDatePicker.init(root);
-    q('.vg-export').addEventListener('click', () => exportExcel('all'));
+    function closeIoMenus() { root.querySelectorAll('[data-io-panel]').forEach(panel => { panel.hidden = true; }); root.querySelectorAll('[data-io-toggle]').forEach(toggle => toggle.setAttribute('aria-expanded', 'false')); }
+    root.querySelectorAll('[data-io-toggle]').forEach(toggle => toggle.addEventListener('click', event => {
+      event.stopPropagation();
+      const panel = root.querySelector(`[data-io-panel="${toggle.dataset.ioToggle}"]`), opening = panel.hidden;
+      closeIoMenus(); panel.hidden = !opening; toggle.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    }));
+    root.querySelectorAll('[data-import-trigger]').forEach(button => button.addEventListener('click', () => root.querySelector(`[data-import-file="${button.dataset.importTrigger}"]`).click()));
+    root.querySelectorAll('[data-import-file]').forEach(input => input.addEventListener('change', async () => { await importFile(input.dataset.importFile, input.files[0]); input.value = ''; closeIoMenus(); }));
+    document.addEventListener('click', event => { if (!root.contains(event.target)) closeIoMenus(); });
     root.querySelectorAll('[data-zone-action]').forEach(button => button.addEventListener('click', () => zoneAction(button.dataset.zoneAction, button.dataset.zoneTarget)));
     q('.vg-zoom').addEventListener('change', render);
     root.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => { view=btn.dataset.view; root.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('vg-active',b===btn)); q('.vg-gantt').hidden=view!=='gantt'; q('.vg-calendar').hidden=view!=='calendar'; render(); }));

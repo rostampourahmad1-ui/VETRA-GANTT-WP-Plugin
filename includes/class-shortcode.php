@@ -16,7 +16,7 @@ class Vetra_Gantt_Shortcode {
         wp_enqueue_script('vetra-predecessors', VG_URL . 'assets/js/vetra-predecessors.js', array(), VG_VERSION, true);
         wp_enqueue_script('vetra-datepicker', VG_URL . 'assets/js/vetra-datepicker.js', array('vetra-jalali'), VG_VERSION, true);
         wp_enqueue_script('vetra-gantt', VG_URL . 'assets/js/vetra-gantt.js', array('vetra-jalali', 'vetra-predecessors', 'vetra-datepicker'), VG_VERSION, true);
-        wp_localize_script('vetra-gantt', 'VG_CONFIG', array('restBase' => esc_url_raw(rest_url('vetra-gantt/v1')), 'nonce' => wp_create_nonce('wp_rest')));
+        wp_localize_script('vetra-gantt', 'VG_CONFIG', array('restBase' => esc_url_raw(rest_url('vetra-gantt/v1')), 'nonce' => wp_create_nonce('wp_rest'), 'defaultZoom' => get_option('vg_default_zoom', 'week'), 'theme' => get_option('vg_theme', 'system'), 'glass' => (bool) get_option('vg_glass', true)));
         ob_start(); include VG_PATH . 'templates/gantt-view.php'; return ob_get_clean();
     }
 }

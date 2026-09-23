@@ -11,6 +11,7 @@ const db = read('includes/class-database.php');
 const holidays = read('includes/class-holidays.php');
 const template = read('templates/gantt-view.php');
 const admin = read('includes/class-admin.php');
+const shortcode = read('includes/class-shortcode.php');
 const adminTpl = read('templates/admin-projects.php');
 const ganttJs = read('assets/js/vetra-gantt.js');
 const adminJs = read('assets/js/vetra-admin.js');
@@ -64,8 +65,19 @@ assert.match(read('assets/css/vetra-gantt-extensions.css'), /vg-draft/, 'draft r
 assert.match(ganttJs, /VetraDatePicker\.init/, 'gantt view must init the date picker');
 assert.match(jalaliJs, /function parseOptional/, 'jalali module must expose parseOptional');
 assert.match(admin, /current_user_can\('edit_posts'\)/);
+assert.match(admin, /add_submenu_page/);
+assert.match(admin, /register_setting/);
+assert.match(read('templates/admin-settings.php'), /settings_fields/);
 assert.match(admin, /vetra-datepicker\.js/, 'admin must enqueue the date picker');
-assert.match(read('includes/class-shortcode.php'), /vetra-datepicker\.js/, 'gantt view must enqueue the date picker');
+assert.match(shortcode, /vetra-datepicker\.js/, 'gantt view must enqueue the date picker');
+assert.match(shortcode, /defaultZoom/);
+assert.match(template, /data-io-toggle="import"/, 'top import menu must exist');
+assert.match(template, /data-import-trigger="excel"/, 'Excel import trigger must exist');
+assert.match(template, /data-import-trigger="mpp"/, 'MPP import trigger must exist');
+assert.match(template, /vg-bottom-toolbar/, 'export controls must be at the bottom');
+assert.match(template, /data-zone-target="wbs"/, 'WBS-specific actions must exist');
+assert.match(ganttJs, /function importExcelFile/, 'Excel import must be implemented');
+assert.match(ganttJs, /function printTarget/, 'print/PDF output must be implemented');
 
 for (const file of ['assets/js/vetra-jalali.js','assets/js/vetra-predecessors.js','assets/js/vetra-gantt.js','assets/js/vetra-admin.js','assets/js/vetra-datepicker.js','includes/class-rest-api.php','includes/class-database.php','includes/class-holidays.php']) {
   const text = read(file);

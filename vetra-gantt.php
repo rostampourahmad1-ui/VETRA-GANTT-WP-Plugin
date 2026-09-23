@@ -21,4 +21,5 @@ add_action('plugins_loaded', array('Vetra_Gantt_Database', 'maybe_upgrade'));
 add_action('init', array('Vetra_Gantt_Shortcode', 'register'));
 add_action('rest_api_init', array('Vetra_Gantt_RestAPI', 'register'));
 add_action('admin_menu', array('Vetra_Gantt_Admin', 'register_menu'));
+add_action('admin_init', array('Vetra_Gantt_Admin', 'register_settings'));
 add_action('admin_enqueue_scripts', array('Vetra_Gantt_Admin', 'enqueue'));

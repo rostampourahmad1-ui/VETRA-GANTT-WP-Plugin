@@ -5,8 +5,7 @@
     <div class="vg-controls">
       <button type="button" data-view="gantt" class="vg-active">گانت</button><button type="button" data-view="calendar">تقویم</button>
       <select class="vg-zoom" aria-label="مقیاس زمانی"><option value="day">روز</option><option value="week" selected>هفته</option><option value="month">ماه</option></select>
-      <button type="button" class="vg-export">Excel</button>
-      <button type="button" data-zone-action="print" data-zone-target="all">PDF / چاپ</button>
+      <div class="vg-io-wrap"><button type="button" class="vg-io-toggle" data-io-toggle="import" aria-expanded="false">⇧ درون‌ریزی</button><div class="vg-io-menu" data-io-panel="import" hidden><strong>درون‌ریزی</strong><button type="button" data-import-trigger="excel">Excel / CSV</button><button type="button" data-import-trigger="mpp">فایل MPP</button><input type="file" data-import-file="excel" accept=".csv,.xls" hidden><input type="file" data-import-file="mpp" accept=".mpp" hidden><small>Excel/CSV درون‌ریزی می‌شود؛ برای MPP ابتدا به Excel یا CSV تبدیل کنید.</small></div></div>
       <button type="button" class="vg-add">+ فعالیت</button>
     </div>
   </header>
@@ -18,11 +17,8 @@
         <strong>WBS / فعالیت‌ها</strong>
         <div class="vg-zone-actions">
           <button type="button" data-zone-action="zoom-out" data-zone-target="wbs" aria-label="کوچک‌نمایی WBS" title="کوچک‌نمایی">−</button>
-          <span class="vg-zoom-label" data-zoom-label="wbs">100%</span>
           <button type="button" data-zone-action="zoom-in" data-zone-target="wbs" aria-label="بزرگ‌نمایی WBS" title="بزرگ‌نمایی">+</button>
           <button type="button" data-zone-action="focus" data-zone-target="wbs" aria-label="نمایش فقط WBS" title="نمایش فقط WBS">⛶</button>
-          <button type="button" data-zone-action="excel" data-zone-target="wbs" aria-label="خروجی Excel از WBS" title="خروجی Excel">XLS</button>
-          <button type="button" data-zone-action="print" data-zone-target="wbs" aria-label="چاپ یا PDF از WBS" title="چاپ / PDF">PDF</button>
         </div>
       </div>
       <div class="vg-grid-head"><span>WBS</span><span>نام فعالیت</span><span>نوع</span><span>مدت</span><span>شروع</span><span>پایان</span><span>پیش‌نیاز</span><span>سهم ٪</span><span>عملیات</span></div>
@@ -34,17 +30,15 @@
         <strong>Gantt / Timeline</strong>
         <div class="vg-zone-actions">
           <button type="button" data-zone-action="zoom-out" data-zone-target="gantt" aria-label="کوچک‌نمایی نمودار" title="کوچک‌نمایی">−</button>
-          <span class="vg-zoom-label" data-zoom-label="gantt">100%</span>
           <button type="button" data-zone-action="zoom-in" data-zone-target="gantt" aria-label="بزرگ‌نمایی نمودار" title="بزرگ‌نمایی">+</button>
           <button type="button" data-zone-action="focus" data-zone-target="gantt" aria-label="نمایش فقط نمودار گانت" title="نمایش فقط گانت">⛶</button>
-          <button type="button" data-zone-action="excel" data-zone-target="gantt" aria-label="خروجی Excel از نمودار" title="خروجی Excel">XLS</button>
-          <button type="button" data-zone-action="print" data-zone-target="gantt" aria-label="چاپ یا PDF از نمودار" title="چاپ / PDF">PDF</button>
         </div>
       </div>
       <div class="vg-chart-head"></div><div class="vg-chart-body"><div class="vg-chart-content"></div></div>
     </div>
   </div>
   <div class="vg-calendar" hidden></div>
+  <footer class="vg-bottom-toolbar"><span>خروجی و چاپ</span><div class="vg-io-wrap"><button type="button" class="vg-export vg-io-toggle" data-io-toggle="export" aria-expanded="false" aria-label="نمایش منوی خروجی" title="خروجی گرفتن">⇩</button><div class="vg-io-menu vg-io-menu-bottom" data-io-panel="export" hidden><strong>خروجی</strong><button type="button" data-zone-action="excel" data-zone-target="all">Excel همه داده‌ها</button><button type="button" data-zone-action="excel" data-zone-target="wbs">Excel فقط WBS</button><button type="button" data-zone-action="excel" data-zone-target="gantt">Excel فقط Gantt</button><hr><button type="button" data-zone-action="print" data-zone-target="all">PDF / چاپ همه</button><button type="button" data-zone-action="print" data-zone-target="wbs">PDF / چاپ WBS</button><button type="button" data-zone-action="print" data-zone-target="gantt">PDF / چاپ Gantt</button></div></div></footer>
   <dialog class="vg-dialog" aria-labelledby="vg-dialog-title">
     <form class="vg-form">
       <h2 id="vg-dialog-title">فعالیت</h2>
